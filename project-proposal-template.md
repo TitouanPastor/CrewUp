@@ -21,7 +21,7 @@
 2. **Events & Attendance**: create/list/inspect local events; RSVP “Going with a group”.
 3. **Group Formation & Chat**: create/join a small group for an event; real-time messaging.
 4. **Party Mode (Safety)**: one-tap Help alert to notify group & log incident timestamp/location.
-4. **Post-Event Feedback**: rate group members + optional short review to build trust.
+5. **Post-Event Feedback**: rate group members + optional short review to build trust.
 
 ## 3. Target Users
 
@@ -72,8 +72,7 @@
 - Kubernetes deployment with monitoring
 
 **Advanced Feature**: **Option E (Advanced Real-time features)**:
-To ensure the correct working of the safety service and hopefully optimize the reaction time to an alert, we plan to implement connection resilience in our application. This would also ensure that the discussion service would remain up-to-date and available should the user leave the website. This will likely be implemented by regularly checking the connection to the server through pings.
-We also plan to use websocket scaling through kubernetes so as to handle communication among massive groups of people (for events such as concerts for example).
+To ensure the correct working of the safety service and hopefully optimize the reaction time to an alert, we plan to implement connection resilience in our application. This would also ensure that the discussion service would remain up-to-date and available should the user leave the website. We also plan to use websocket scaling through kubernetes so as to handle communication among massive groups of people (for events such as concerts for example).
 
 **Target Grade**: **4**
 The ideal target 5, is not realistic given that the group is composed of only 2 students, both of whom are exchange students that will leave Lulea before christmas.
@@ -81,16 +80,17 @@ The target 4 however, is realistic given that the advanced feature we plan to im
 
 ## 7. Development Plan
 Example of development timeline:
-**Weeks 1-2**: Database schema, basic services, authentication, Kubernetes setup
-**Weeks 3-4**: Core features, API implementation, CI/CD pipeline
-**Weeks 5**: Advanced feature, comprehensive testing, security
-**Weeks 6-7**: Documentation, performance analysis, final polish, final presentation
+**Week 1**: Database schema, basic services, authentication, Kubernetes setup
+**Weeks 2-3**: Core features, API implementation, CI/CD pipeline
+**Week 4**: Comprehensive testing, security, advanced feature
+**Week 5**: Documentation, performance analysis
+**Week ~5-6**: final polish, final presentation
 
 ## 8. Risk Assessment
 **Main Risks**:
 - **Technical**: 
   - **Risk**: WebSocket scaling and connection resilience across Kubernetes pods will be difficult, especially for real-time safety alerts where message delivery is critical.
-  - **Mitigation**: We will start with a simple single-pod WebSocket setup, then incrementally add Redis/RabbitMQ for pub/sub messaging between pods. Implement connection retry logic early and add heartbeat/ping mechanisms. Have a fallback polling mechanism if WebSocket connections fail.
+  - **Mitigation**: We will start with a simple single-pod WebSocket setup, then incrementally add Redis/RabbitMQ for pub/sub messaging between pods. Implement connection retry logic early and add heartbeat/ping mechanisms. Have a fallback polling mechanism if WebSocket connections fail if not handled directly with the library.
 
 - **Scope**: 
   - **Risk**: Microservices architecture with 5 services + message broker + Kubernetes + advanced real-time features is ambitious for a 2-person team with limited timeframe.
@@ -104,8 +104,9 @@ Example of development timeline:
 
 ## 9. Team Organization
 
-**[Member 1]**: [Primary responsibility area]
-**[Member 2]**: [Primary responsibility area]
+We will use an Agile-inspired approach.
+Each week, we will review progress and decide together which tasks each member will take for that sprint.
+Responsibilities will be adjusted dynamically based on workload and project needs.
 
 ---
 
