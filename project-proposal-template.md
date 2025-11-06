@@ -97,8 +97,3 @@ Example of development timeline:
 
 **Approval Request**: We request approval to proceed with this project concept and technology stack.
 
-
-Bien vu ! Voici la **Section 6 corrigée** (à coller telle quelle dans ton proposal). J’ai rempli la ligne “Microservices architecture with [service breakdown]” avec le détail concret des services.
-
----
-
