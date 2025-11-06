@@ -1,7 +1,7 @@
 # Project Proposal Template
 
 **Course**: Design of Dynamic Web Systems (M7011E)  
-**Team Members**: Titouan Pastor, Damien Lanusse 
+**Team Members**: Titouan Pastor, Damien Lanusse
 **Date**: 06/11/2025 
 
 ---
