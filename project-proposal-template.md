@@ -32,9 +32,17 @@
 
 ## 4. Technology Stack
 
-**Backend**: Python with FastAPI - *Justification: typed, fast dev, built-in OpenAPI*
-**Database**: PostgreSQL - *Justification: relational data with clear relationships: users, events, groups, memberships, ratings*
-**Frontend**: React *(minimal implementation)*
+**Backend**: Python with FastAPI
+
+*Justification:* typed, fast development, built‑in OpenAPI
+
+**Database**: PostgreSQL
+
+*Justification:* relational model fits users, events, groups, memberships, ratings
+
+**Frontend**: React
+
+*Justification:* component-based, fast prototyping; minimal implementation planned
 
 ## 5. System Architecture
 
