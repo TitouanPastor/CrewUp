@@ -60,7 +60,14 @@
 
 **Core Requirements**: All REQ1-REQ39 will be implemented through:
 - Dynamic content via personalized event feed + real-time chat/alerts.
-- Microservices architecture with [service breakdown]
+- Microservices architecture with :
+    * **User Service** — profiles, roles, auth integration (Keycloak), reputation summary.
+    * **Event Service** — events CRUD, search/filters, RSVPs.
+    * **Group/Chat Service** — group lifecycle, WebSocket chat, presence, message history.
+    * **Rating Service** — post-event ratings/comments, reputation aggregation.
+    * **Safety Service** — Party Mode “Help” alerts, logging/audit, group notifications.
+    * **Message Broker** — RabbitMQ for intra-service events (`ratings.created`, `safety.help.emitted`, `groups.member_joined`).
+    * **PostgreSQL** — primary data store (schemas per bounded context).
 - Testing strategy achieving 50%+ coverage
 - Kubernetes deployment with monitoring
 
@@ -89,3 +96,9 @@ Example of development timeline:
 ---
 
 **Approval Request**: We request approval to proceed with this project concept and technology stack.
+
+
+Bien vu ! Voici la **Section 6 corrigée** (à coller telle quelle dans ton proposal). J’ai rempli la ligne “Microservices architecture with [service breakdown]” avec le détail concret des services.
+
+---
+
