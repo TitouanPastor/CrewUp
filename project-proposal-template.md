@@ -11,7 +11,7 @@
 
 **Problem**: Students often want to attend nightlife/events but don’t want to go alone. Coordination is fragmented (DMs, group chats), safety concerns exist (harassment, spiked drinks), and trust is hard to establish.
 
-**Solution**: CrewUp is a lightweight web app where users discover nearby events, see people also interested, form a small group chat, and rate fellow attendees afterward. A “Party Mode” adds a Help button for quick group alerts and venue safety pings.
+**Solution**: CrewUp is a lightweight web app where users discover nearby events, find people interested in those events that they can form small group chats with, and rate fellow attendees afterward. A “Party Mode” adds a Help button for quick group alerts and venue safety pings.
 
 **Why Dynamic?**: Feeds and recommendations adapt to user location/interests/history; group chats and attendance rosters update in real-time; safety alerts propagate live to group members.
 
@@ -80,12 +80,11 @@ The ideal target 5, is not realistic given that the group is composed of only 2 
 The target 4 however, is realistic given that the advanced feature we plan to implement is something we would have already started. There would always have been somewhat advanced real time features, what with a safety service that would be working during an event, and we will only need to push those elements further. 
 
 ## 7. Development Plan
-Example of development timeline:
-**Week 1**: Database schema, basic services, authentication, Kubernetes setup
-**Weeks 2-3**: Core features, API implementation, CI/CD pipeline
-**Week 4**: Comprehensive testing, security, advanced feature
-**Week 5**: Documentation, performance analysis
-**Week ~5-6**: final polish, final presentation
+**Week 1 (Nov 10 – Nov 16)**: Database schema, basic services, authentication, Kubernetes setup
+**Weeks 2-3 (Nov 17 – Nov 30)**: Core features, API implementation, CI/CD pipeline
+**Week 4 (Dec 1 – Dec 7)**: Comprehensive testing, security, advanced feature
+**Week 5 (Dec 8 – Dec 14)**: Documentation, performance analysis
+**Week ~5-6 (Dec 15 – Dec 20)**: final polish, final presentation
 
 ## 8. Risk Assessment
 **Main Risks**:
