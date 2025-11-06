@@ -85,7 +85,6 @@ Example of development timeline:
 
 **[Member 1]**: [Primary responsibility area]
 **[Member 2]**: [Primary responsibility area]
-**[Member 3]**: [Primary responsibility area]
 
 ---
 
