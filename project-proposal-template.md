@@ -2,7 +2,7 @@
 
 **Course**: Design of Dynamic Web Systems (M7011E)  
 **Team Members**: Titouan Pastor, Damien Lanusse
- 
+
 **Date**: 06/11/2025 
 
 ---
@@ -59,7 +59,7 @@
 
 ## 6. Requirements Fulfillment
 
-**Core Requirements**: All REQ1-REQ39 will be implemented through:
+**Core Requirements**: All REQ1-REQ27 will be implemented through:
 - Dynamic content via personalized event feed + real-time chat/alerts.
 - Microservices architecture with :
     * **User Service** — profiles, roles, auth integration (Keycloak), reputation summary.
