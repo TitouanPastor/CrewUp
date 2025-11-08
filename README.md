@@ -1,34 +1,17 @@
-docker-compose up
-docker-compose build
-docker-compose up
-docker-compose up -d
-docker exec -it crewup-db psql -U crewup -d crewup
-docker-compose logs -f
-docker-compose logs -f user
-docker-compose logs -f postgres
-docker-compose restart user
-docker-compose down
-docker-compose down -v
-docker-compose build user
-docker-compose up -d user
-docker-compose logs
-docker ps -a
-docker-compose ps
-docker-compose logs postgres
 # CrewUp — Quick Development README
 
 This repository contains a local development setup for CrewUp: a microservice-based event/group discovery app (React frontend + FastAPI microservices + PostgreSQL).
 
-This README is a concise guide for getting the project running locally.
+The README below includes a short Quickstart and troubleshooting tips so you or a teammate can run the stack locally.
 
 Requirements
 ------------
 - Docker and Docker Compose
 - 4GB+ RAM available
 
-Quick start
------------
-1. Build containers (recommended):
+Quickstart (2-minute run)
+-------------------------
+1. Build the containers (recommended):
 
 ```bash
 ./setup.sh
@@ -40,19 +23,23 @@ Quick start
 docker-compose up
 ```
 
-3. Open the frontend:
+3. Open the frontend in your browser:
 
 http://localhost:3000
 
+Notes: the first build may take 5–10 minutes depending on your machine. Subsequent runs are much faster.
+
 Services and ports
 ------------------
-- Frontend: http://localhost:3000
-- Event API: http://localhost:8001
-- Group API: http://localhost:8002
-- Rating API: http://localhost:8003
-- Safety API: http://localhost:8004
-- User API: http://localhost:8005
-- PostgreSQL: localhost:5432
+| Service    | Port  | URL                       |
+|------------|-------|---------------------------|
+| Frontend   | 3000  | http://localhost:3000     |
+| Event API  | 8001  | http://localhost:8001     |
+| Group API  | 8002  | http://localhost:8002     |
+| Rating API | 8003  | http://localhost:8003     |
+| Safety API | 8004  | http://localhost:8004     |
+| User API   | 8005  | http://localhost:8005     |
+| Postgres   | 5432  | localhost:5432            |
 
 Useful commands
 ---------------
@@ -70,17 +57,44 @@ The PostgreSQL container initializes with `database/schema.sql` on first run. To
 docker exec -it crewup-db psql -U crewup -d crewup
 ```
 
+Quick troubleshooting
+---------------------
+- Frontend does not load:
+	```bash
+	docker logs crewup-frontend
+	```
+- A service fails to start:
+	```bash
+	docker-compose logs <service-name>
+	```
+- Port already used: edit `docker-compose.yaml` and change the host port (for example `3001:80`).
+- Reset fully (including DB):
+	```bash
+	docker-compose down -v
+	docker system prune -a
+	./setup.sh
+	docker-compose up
+	```
+
+Features to test
+----------------
+- Map interactive (click markers)
+- Events list and detail view
+- Create / Join group flows
+- Group chat (simulated)
+- Party mode (safety alert button)
+
 Notes and limitations
 ---------------------
-- Many parts are currently mocked. The frontend still uses mock data in several places.
-- Authentication is mocked.
+- Many parts are currently mocked; the frontend still uses mock data in several places.
+- Authentication is mocked for local testing.
 - The chat is simulated (no WebSocket broker yet).
 
-Next steps
-----------
+Next steps (roadmap)
+--------------------
 1. Wire services to PostgreSQL with real CRUD endpoints.
 2. Replace frontend mocks with real API calls.
-3. Add WebSocket-based chat and message broker.
+3. Add WebSocket-based chat and a message broker.
 
 Contributing
 ------------
