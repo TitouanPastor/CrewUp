@@ -1,236 +1,95 @@
-# 🚀 CrewUp - Local Development Guide
+docker-compose up
+docker-compose build
+docker-compose up
+docker-compose up -d
+docker exec -it crewup-db psql -U crewup -d crewup
+docker-compose logs -f
+docker-compose logs -f user
+docker-compose logs -f postgres
+docker-compose restart user
+docker-compose down
+docker-compose down -v
+docker-compose build user
+docker-compose up -d user
+docker-compose logs
+docker ps -a
+docker-compose ps
+docker-compose logs postgres
+# CrewUp — Quick Development README
 
-CrewUp est une application pour trouver des groupes pour sortir en soirée. Cette version minimale te permet de tester l'infrastructure de base.
+This repository contains a local development setup for CrewUp: a microservice-based event/group discovery app (React frontend + FastAPI microservices + PostgreSQL).
 
-## 📋 Prérequis
+This README is a concise guide for getting the project running locally.
 
-- Docker et Docker Compose installés
-- WSL2 (si tu es sur Windows)
-- 4GB+ de RAM disponible
+Requirements
+------------
+- Docker and Docker Compose
+- 4GB+ RAM available
 
-## 🏗️ Architecture
-
-L'app est composée de :
-- **5 microservices FastAPI** : user, event, group, rating, safety
-- **1 frontend React** : SPA moderne avec TypeScript, Vite, TailwindCSS, Leaflet
-- **PostgreSQL** : base de données avec schema complet
-
-### Ports exposés
-
-| Service    | Port Local | URL                        |
-|------------|------------|----------------------------|
-| Frontend   | 3000       | http://localhost:3000      |
-| Event      | 8001       | http://localhost:8001      |
-| Group      | 8002       | http://localhost:8002      |
-| Rating     | 8003       | http://localhost:8003      |
-| Safety     | 8004       | http://localhost:8004      |
-| User       | 8005       | http://localhost:8005      |
-| PostgreSQL | 5432       | localhost:5432             |
-
-## 🚀 Démarrage rapide
-
-### Option A: Script automatique (recommandé)
+Quick start
+-----------
+1. Build containers (recommended):
 
 ```bash
 ./setup.sh
-docker-compose up
 ```
 
-### Option B: Manuel
-
-#### 1️⃣ Build tous les containers
-
-```bash
-chmod +x build-all.sh
-./build-all.sh
-```
-
-Ou manuellement :
-```bash
-docker-compose build
-```
-
-#### 2️⃣ Lancer tous les services
+2. Start the stack:
 
 ```bash
 docker-compose up
 ```
 
-Pour lancer en arrière-plan :
-```bash
-docker-compose up -d
-```
+3. Open the frontend:
 
-### 3️⃣ Ouvrir l'app
+http://localhost:3000
 
-Ouvre ton navigateur sur **http://localhost:3000**
+Services and ports
+------------------
+- Frontend: http://localhost:3000
+- Event API: http://localhost:8001
+- Group API: http://localhost:8002
+- Rating API: http://localhost:8003
+- Safety API: http://localhost:8004
+- User API: http://localhost:8005
+- PostgreSQL: localhost:5432
 
-Tu devrais voir :
-- 🗺️ Une carte interactive avec les événements
-- 📝 Une liste d'événements sur la gauche
-- 🎨 Une interface moderne dark/light mode
+Useful commands
+---------------
+- Tail logs: `docker-compose logs -f`
+- Start detached: `docker-compose up -d`
+- Stop: `docker-compose down`
+- Remove volumes (reset DB): `docker-compose down -v`
+- Rebuild: `docker-compose build`
 
-### 4️⃣ Tester le backend
-
-```bash
-# User service
-curl http://localhost:8005
-
-# Event service
-curl http://localhost:8001
-
-# Health checks
-curl http://localhost:8005/health
-curl http://localhost:8001/health
-```
-
-## 🗄️ Base de données
-
-La DB PostgreSQL se lance automatiquement et exécute `database/schema.sql` au démarrage.
-
-### Se connecter à la DB
+Database
+--------
+The PostgreSQL container initializes with `database/schema.sql` on first run. To connect:
 
 ```bash
-# Depuis WSL/Linux
 docker exec -it crewup-db psql -U crewup -d crewup
-
-# Ou avec un client comme DBeaver
-Host: localhost
-Port: 5432
-Database: crewup
-User: crewup
-Password: crewup_dev_password
 ```
 
-### Commandes SQL utiles
+Notes and limitations
+---------------------
+- Many parts are currently mocked. The frontend still uses mock data in several places.
+- Authentication is mocked.
+- The chat is simulated (no WebSocket broker yet).
 
-```sql
--- Lister les tables
-\dt
+Next steps
+----------
+1. Wire services to PostgreSQL with real CRUD endpoints.
+2. Replace frontend mocks with real API calls.
+3. Add WebSocket-based chat and message broker.
 
--- Voir le schema d'une table
-\d users
+Contributing
+------------
+- Create a branch, make changes, open a pull request describing the change.
 
--- Quelques requêtes de test
-SELECT * FROM users;
-SELECT * FROM events;
-```
-
-## 🛠️ Commandes utiles
-
-### Voir les logs
-
-```bash
-# Tous les services
-docker-compose logs -f
-
-# Un service spécifique
-docker-compose logs -f user
-docker-compose logs -f postgres
-```
-
-### Redémarrer un service
-
-```bash
-docker-compose restart user
-```
-
-### Stopper tout
-
-```bash
-docker-compose down
-```
-
-### Stopper ET supprimer les volumes (reset complet de la DB)
-
-```bash
-docker-compose down -v
-```
-
-### Rebuild un seul service
-
-```bash
-docker-compose build user
-docker-compose up -d user
-```
-
-## 🔧 Debugging
-
-### Problème : Les containers ne démarrent pas
-
-```bash
-# Vérifier les logs
-docker-compose logs
-
-# Vérifier l'état des containers
-docker ps -a
-```
-
-### Problème : Port déjà utilisé
-
-Si un port est déjà pris sur Windows/WSL, édite `docker-compose.yaml` et change le port local :
-```yaml
-ports:
-  - "9001:8000"  # Au lieu de 8001:8000
-```
-
-### Problème : La DB ne se connecte pas
-
-```bash
-# Vérifier que postgres est healthy
-docker-compose ps
-
-# Regarder les logs postgres
-docker-compose logs postgres
-```
-
-### Problème : Permissions sur WSL
-
-```bash
-# Si build-all.sh ne se lance pas
-chmod +x build-all.sh deploy.sh cleanup.sh upgrade.sh
-```
-
-## 📝 Tester l'API avec curl
-
-### Créer un utilisateur (quand les endpoints seront implémentés)
-
-```bash
-curl -X POST http://localhost:8005/users \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"test123","first_name":"John","last_name":"Doe"}'
-```
-
-### Lister les événements
-
-```bash
-curl http://localhost:8001/events
-```
-
-## 🎯 Prochaines étapes
-
-1. **Implémenter les endpoints CRUD** dans chaque service
-2. **Connecter les services à PostgreSQL** (ajouter psycopg2/sqlalchemy)
-3. **Connecter le frontend aux APIs** (remplacer les mock data)
-4. **Implémenter WebSocket** pour le chat temps réel
-5. **Ajouter RabbitMQ** pour la communication inter-services
-6. **Ajouter Keycloak** pour l'authentification
-7. **Ajouter des tests**
-
-## 🐛 Problèmes connus
-
-- [ ] Les services backend ne sont pas encore connectés à PostgreSQL
-- [ ] Le frontend utilise des données mockées (pas d'API réelle)
-- [ ] Pas d'authentification réelle (Keycloak à implémenter)
-- [ ] Pas de WebSocket réel pour le chat
-- [ ] Pas de message broker (RabbitMQ à ajouter)
-
-## 📚 Ressources
-
-- [FastAPI Docs](https://fastapi.tiangolo.com/)
-- [Docker Compose Docs](https://docs.docker.com/compose/)
-- [PostgreSQL Docs](https://www.postgresql.org/docs/)
+Contact
+-------
+If you need help running the project, ping the maintainer.
 
 ---
 
-**Enjoy coding! 🎉**
+Simple, focused, ready for local development.
