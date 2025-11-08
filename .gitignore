@@ -1,0 +1,100 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.pnp.*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Vite / Build
+/dist
+/build
+/.vite
+/.parcel-cache
+/public/dist
+
+# Frontend specific
+/frontend/node_modules/
+/frontend/dist/
+/frontend/.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+ENV/
+.pytest_cache/
+pytest_cache/
+.coverage
+htmlcov/
+coverage/
+.coverage.*
+
+# Migrations, DB
+*.sqlite3
+*.db
+/*.db
+/migrations/versions
+
+# Docker
+docker-compose.override.yml
+.env.*.local
+.env
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# IDEs
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# Mac
+.AppleDouble
+.LSOverride
+
+# JetBrains
+out/
+
+# Misc
+coverage/
+*.pem
+*.key
+*.swo
+*.swp
+
+# Kubernetes / Helm
+helm/crewup/.DS_Store
+helm/crewup/values.local.yaml
+
+# Allow icon and public assets
+!/public/icon.png
+!/public/favicon.ico
+
+# Ignore built frontend in repo root if any
+/dist/
+
+# Generated files
+npm-debug.log*
+
+# Sensitive
+secrets.json
+
+# Git hooks
+.husky/_
+

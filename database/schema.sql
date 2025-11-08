@@ -71,7 +71,7 @@ CREATE TABLE events (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_events_date ON events(event_date);
+CREATE INDEX idx_events_start ON events(event_start);
 CREATE INDEX idx_events_creator ON events(creator_id);
 CREATE INDEX idx_events_location ON events(latitude, longitude); -- For geo queries
 

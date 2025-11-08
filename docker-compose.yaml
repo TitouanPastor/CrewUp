@@ -1,14 +1,39 @@
 
 services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15
+    container_name: crewup-db
+    environment:
+      POSTGRES_DB: crewup
+      POSTGRES_USER: crewup
+      POSTGRES_PASSWORD: crewup_dev_password
+    volumes:
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - crewup-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U crewup"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # Event service
   event:
     build:
       context: ./event
       dockerfile: Dockerfile
     container_name: crewup-event
+    ports:
+      - "8001:8000"
     networks:
       - crewup-network
-    #restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   # Group service
   group:
@@ -16,9 +41,13 @@ services:
       context: ./group
       dockerfile: Dockerfile
     container_name: crewup-group
+    ports:
+      - "8002:8000"
     networks:
       - crewup-network
-    #restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   # Rating service
   rating:
@@ -26,9 +55,13 @@ services:
       context: ./rating
       dockerfile: Dockerfile
     container_name: crewup-rating
+    ports:
+      - "8003:8000"
     networks:
       - crewup-network
-    #restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   # Safety service
   safety:
@@ -36,9 +69,13 @@ services:
       context: ./safety
       dockerfile: Dockerfile
     container_name: crewup-safety
+    ports:
+      - "8004:8000"
     networks:
       - crewup-network
-    #restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   # User service
   user:
@@ -46,23 +83,36 @@ services:
       context: ./user
       dockerfile: Dockerfile
     container_name: crewup-user
+    ports:
+      - "8005:8000"
     networks:
       - crewup-network
-    #restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
 
-  # Frontend service
+  # Frontend service (React + Nginx)
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: crewup-frontend
-    #ports:
-    #  - "8080:80"
+    ports:
+      - "3000:80"
     networks:
       - crewup-network
-    #restart: unless-stopped
+    depends_on:
+      - user
+      - event
+      - group
+      - rating
+      - safety
 
 # Define custom network
 networks:
   crewup-network:
     driver: bridge
+
+# Define volumes
+volumes:
+  postgres_data:
