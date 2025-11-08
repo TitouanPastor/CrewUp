@@ -1,0 +1,31 @@
+{{- range $serviceName, $config := .Values.services }}
+{{- if $config.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $serviceName }}
+  namespace: {{ $.Values.namespace }}
+  labels:
+    app: {{ $serviceName }}
+spec:
+  replicas: {{ $config.replicas }}
+  selector:
+    matchLabels:
+      app: {{ $serviceName }}
+  template:
+    metadata:
+      labels:
+        app: {{ $serviceName }}
+    spec:
+      containers:
+      - name: {{ $serviceName }}
+        image: crewup-{{ $serviceName }}:{{ $.Values.imageTag }}
+        imagePullPolicy: {{ $.Values.imagePullPolicy }}
+        ports:
+        - containerPort: {{ $config.port }}
+        env:
+        - name: SERVICE_NAME
+          value: {{ $serviceName }}
+{{- end }}
+{{- end }}

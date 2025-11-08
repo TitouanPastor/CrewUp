@@ -1,0 +1,10 @@
+apiVersion: v2
+name: crewup
+description: A Helm chart for CrewUp - Event meetup platform with microservices
+type: application
+version: 0.1.0
+appVersion: "1.0"
+
+maintainers:
+  - name: Titouan Pastor
+  - name: Damien Lanusse

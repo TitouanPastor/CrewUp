@@ -1,0 +1,68 @@
+
+services:
+  # Event service
+  event:
+    build:
+      context: ./event
+      dockerfile: Dockerfile
+    container_name: crewup-event
+    networks:
+      - crewup-network
+    #restart: unless-stopped
+
+  # Group service
+  group:
+    build:
+      context: ./group
+      dockerfile: Dockerfile
+    container_name: crewup-group
+    networks:
+      - crewup-network
+    #restart: unless-stopped
+
+  # Rating service
+  rating:
+    build:
+      context: ./rating
+      dockerfile: Dockerfile
+    container_name: crewup-rating
+    networks:
+      - crewup-network
+    #restart: unless-stopped
+
+  # Safety service
+  safety:
+    build:
+      context: ./safety
+      dockerfile: Dockerfile
+    container_name: crewup-safety
+    networks:
+      - crewup-network
+    #restart: unless-stopped
+
+  # User service
+  user:
+    build:
+      context: ./user
+      dockerfile: Dockerfile
+    container_name: crewup-user
+    networks:
+      - crewup-network
+    #restart: unless-stopped
+
+  # Frontend service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: crewup-frontend
+    #ports:
+    #  - "8080:80"
+    networks:
+      - crewup-network
+    #restart: unless-stopped
+
+# Define custom network
+networks:
+  crewup-network:
+    driver: bridge

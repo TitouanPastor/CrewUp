@@ -1,0 +1,53 @@
+{{- if .Values.frontend.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: frontend
+spec:
+  replicas: {{ .Values.frontend.replicas }}
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: crewup-frontend:{{ .Values.imageTag }}
+        imagePullPolicy: {{ .Values.imagePullPolicy }}
+        ports:
+        - containerPort: {{ .Values.frontend.port }}
+        env:
+        - name: REACT_APP_EVENT_API
+          value: "http://event:8000"
+        - name: REACT_APP_GROUP_API
+          value: "http://group:8000"
+        - name: REACT_APP_RATING_API
+          value: "http://rating:8000"
+        - name: REACT_APP_SAFETY_API
+          value: "http://safety:8000"
+        - name: REACT_APP_USER_API
+          value: "http://user:8000"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: frontend
+spec:
+  type: ClusterIP
+  ports:
+  - port: {{ .Values.frontend.port }}
+    targetPort: {{ .Values.frontend.port }}
+    protocol: TCP
+  selector:
+    app: frontend
+{{- end }}

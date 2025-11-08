@@ -1,0 +1,64 @@
+{{- if .Values.ingress.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: crewup-ingress
+  namespace: {{ .Values.namespace }}
+  annotations:
+    cert-manager.io/cluster-issuer: {{ .Values.ingress.certIssuer }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  tls:
+  - hosts:
+    - {{ .Values.domain }}
+    secretName: crewup-tls
+  rules:
+  - host: {{ .Values.domain }}
+    http:
+      paths:
+      # Frontend - main domain
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend
+            port:
+              number: {{ .Values.frontend.port }}
+      # API routes
+      - path: /api/event
+        pathType: Prefix
+        backend:
+          service:
+            name: event
+            port:
+              number: 8000
+      - path: /api/group
+        pathType: Prefix
+        backend:
+          service:
+            name: group
+            port:
+              number: 8000
+      - path: /api/rating
+        pathType: Prefix
+        backend:
+          service:
+            name: rating
+            port:
+              number: 8000
+      - path: /api/safety
+        pathType: Prefix
+        backend:
+          service:
+            name: safety
+            port:
+              number: 8000
+      - path: /api/user
+        pathType: Prefix
+        backend:
+          service:
+            name: user
+            port:
+              number: 8000
+{{- end }}

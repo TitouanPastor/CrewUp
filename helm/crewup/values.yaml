@@ -1,0 +1,52 @@
+# CrewUp Helm Chart Values
+# Configure your CrewUp application deployment
+
+# Global settings
+namespace: crewup
+imageRegistry: ghcr.io/titouanpastor  # Use repo owner's registry
+imageTag: latest
+imagePullPolicy: Always  # Always pull to get latest changes
+
+# Domain and SSL configuration
+domain: crewup.ltu-m7011e-3.se  # Change to your assigned domain
+email: johan.kristiansson@ltu.se         # Change to your email
+
+# API Services (all FastAPI microservices)
+services:
+  event:
+    enabled: true
+    replicas: 1
+    port: 8000
+    
+  group:
+    enabled: true
+    replicas: 1
+    port: 8000
+    
+  rating:
+    enabled: true
+    replicas: 1
+    port: 8000
+    
+  safety:
+    enabled: true
+    replicas: 2
+    port: 8000
+    
+  user:
+    enabled: true
+    replicas: 2
+    port: 8000
+
+# Frontend (React)
+frontend:
+  enabled: true
+  replicas: 1
+  port: 80
+
+# Ingress Settings
+ingress:
+  enabled: true
+  className: traefik
+  # Use letsencrypt-staging for testing, letsencrypt-prod for production
+  certIssuer: letsencrypt-staging
