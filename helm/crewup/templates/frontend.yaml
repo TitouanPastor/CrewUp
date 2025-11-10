@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: crewup-frontend:{{ .Values.imageTag }}
+        image: {{ .Values.imageRegistry }}/crewup-frontend:{{ .Values.imageTag }}
         imagePullPolicy: {{ .Values.imagePullPolicy }}
         ports:
         - containerPort: {{ .Values.frontend.port }}

@@ -17,7 +17,7 @@ spec:
   - host: {{ .Values.domain }}
     http:
       paths:
-      # Frontend - main domain
+      # Frontend - main domain (serves React SPA)
       - path: /
         pathType: Prefix
         backend:
@@ -25,40 +25,59 @@ spec:
             name: frontend
             port:
               number: {{ .Values.frontend.port }}
-      # API routes
+      
+      {{- if .Values.services.event.enabled }}
+      # Event service API
       - path: /api/event
         pathType: Prefix
         backend:
           service:
             name: event
             port:
-              number: 8000
+              number: {{ .Values.services.event.port }}
+      {{- end }}
+      
+      {{- if .Values.services.group.enabled }}
+      # Group service API
       - path: /api/group
         pathType: Prefix
         backend:
           service:
             name: group
             port:
-              number: 8000
+              number: {{ .Values.services.group.port }}
+      {{- end }}
+      
+      {{- if .Values.services.rating.enabled }}
+      # Rating service API
       - path: /api/rating
         pathType: Prefix
         backend:
           service:
             name: rating
             port:
-              number: 8000
+              number: {{ .Values.services.rating.port }}
+      {{- end }}
+      
+      {{- if .Values.services.safety.enabled }}
+      # Safety service API
       - path: /api/safety
         pathType: Prefix
         backend:
           service:
             name: safety
             port:
-              number: 8000
+              number: {{ .Values.services.safety.port }}
+      {{- end }}
+      
+      {{- if .Values.services.user.enabled }}
+      # User service API
       - path: /api/user
         pathType: Prefix
         backend:
           service:
             name: user
             port:
-              number: 8000
+              number: {{ .Values.services.user.port }}
+      {{- end }}
 {{- end }}
