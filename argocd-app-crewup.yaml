@@ -1,0 +1,45 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: crewup
+  namespace: argocd
+  # Finalizer pour nettoyer les ressources quand on supprime l'app
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  # Projet ArgoCD (default = projet par défaut)
+  project: default
+  
+  # Source : ton repo GitHub
+  source:
+    repoURL: https://github.com/TitouanPastor/CrewUp
+    targetRevision: main  # Branche à surveiller
+    path: helm/crewup     # Chemin vers le Helm chart
+    helm:
+      valueFiles:
+        - values.yaml     # Fichier de valeurs Helm
+  
+  # Destination : où déployer dans le cluster
+  destination:
+    server: https://kubernetes.default.svc  # Cluster local
+    namespace: app                          # Ton namespace
+  
+  # Politique de synchronisation
+  syncPolicy:
+    automated:
+      prune: true       # Supprime les ressources qui ne sont plus dans Git
+      selfHeal: true    # Répare automatiquement si quelqu'un modifie manuellement
+      allowEmpty: false # N'autorise pas les déploiements vides
+    
+    syncOptions:
+      - CreateNamespace=false  # Le namespace 'app' existe déjà
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+    
+    # Retry automatique en cas d'échec
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

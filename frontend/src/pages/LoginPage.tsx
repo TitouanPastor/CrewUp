@@ -27,8 +27,8 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <img src="/icon.png" alt="CrewUp logo" className="mx-auto h-16 w-16 mb-4 rounded-md" />
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">CrewUp</h1>
-          <p className="text-gray-600">Find your crew, join the party</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">CrewUp 🚀</h1>
+          <p className="text-gray-600">GitOps Auto-Deploy Test!</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
