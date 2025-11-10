@@ -2,6 +2,9 @@
 .DS_Store
 Thumbs.db
 
+# tutorials
+m7011e/
+
 # Node
 node_modules/
 npm-debug.log*
