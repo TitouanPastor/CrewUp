@@ -8,6 +8,11 @@ on:
     branches:
       - main
 
+# Permissions pour tout le workflow
+permissions:
+  contents: write
+  packages: write
+
 env:
   REGISTRY: ghcr.io
   IMAGE_PREFIX: ghcr.io/titouanpastor/crewup
@@ -16,9 +21,6 @@ jobs:
   # Build et push toutes les images
   build-and-push:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      packages: write
     strategy:
       matrix:
         service: [frontend, event, group, rating, safety, user]
