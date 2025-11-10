@@ -2,47 +2,57 @@
 # Configure your CrewUp application deployment
 
 # Global settings
-namespace: crewup
-imageRegistry: ghcr.io/titouanpastor  # Use repo owner's registry
+namespace: app  # Namespace créé dans le projet Rancher "crewup"
+imageRegistry: ghcr.io/titouanpastor
 imageTag: latest
-imagePullPolicy: Always  # Always pull to get latest changes
+imagePullPolicy: Always  # Always pull latest images
 
 # Domain and SSL configuration
-domain: crewup.ltu-m7011e-3.se  # Change to your assigned domain
-email: johan.kristiansson@ltu.se         # Change to your email
+domain: crewup.ltu-m7011e-3.se
+email: titpas-5@student.ltu.se
 
-# API Services (all FastAPI microservices)
+# PostgreSQL Database
+postgres:
+  enabled: true
+  version: "15"
+  database: crewup
+  user: crewup
+  password: crewup_dev_password  # Change for production!
+  storage: 5Gi  # Disk space for database
+
+# API Services (all FastAPI microservices with minimal implementation)
 services:
   event:
-    enabled: true
+    enabled: true  # Has basic health endpoints
     replicas: 1
     port: 8000
     
   group:
-    enabled: true
+    enabled: true  # Has basic health endpoints
     replicas: 1
     port: 8000
     
   rating:
-    enabled: true
+    enabled: true  # Has basic health endpoints
     replicas: 1
     port: 8000
     
   safety:
-    enabled: true
-    replicas: 2
+    enabled: true  # Has basic health endpoints
+    replicas: 1
     port: 8000
     
   user:
-    enabled: true
-    replicas: 2
+    enabled: true  # Has basic health endpoints
+    replicas: 1
     port: 8000
 
-# Frontend (React)
+# Frontend (React + Nginx)
 frontend:
   enabled: true
   replicas: 1
   port: 80
+  image: crewup-frontend  # Local built image name
 
 # Ingress Settings
 ingress:
