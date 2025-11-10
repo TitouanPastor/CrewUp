@@ -4,7 +4,7 @@
 # Global settings
 namespace: app  # Namespace créé dans le projet Rancher "crewup"
 imageRegistry: ghcr.io/titouanpastor
-imageTag: latest
+imageTag: e8f911d
 imagePullPolicy: Always  # Always pull latest images
 
 # Domain and SSL configuration
