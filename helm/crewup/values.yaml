@@ -4,7 +4,6 @@
 # Global settings
 namespace: app  # Namespace créé dans le projet Rancher "crewup"
 imageRegistry: ghcr.io/titouanpastor
-imageTag: e8f911d
 imagePullPolicy: Always  # Always pull latest images
 
 # Domain and SSL configuration
@@ -26,32 +25,38 @@ services:
     enabled: true  # Has basic health endpoints
     replicas: 1
     port: 8000
+    imageTag: latest
     
   group:
     enabled: true  # Has basic health endpoints
     replicas: 1
     port: 8000
+    imageTag: latest
     
   rating:
     enabled: true  # Has basic health endpoints
     replicas: 1
     port: 8000
+    imageTag: latest
     
   safety:
     enabled: true  # Has basic health endpoints
     replicas: 1
     port: 8000
+    imageTag: latest
     
   user:
     enabled: true  # Has basic health endpoints
     replicas: 1
     port: 8000
+    imageTag: latest
 
 # Frontend (React + Nginx)
 frontend:
   enabled: true
   replicas: 1
   port: 80
+  imageTag: latest
   image: crewup-frontend  # Local built image name
 
 # Ingress Settings

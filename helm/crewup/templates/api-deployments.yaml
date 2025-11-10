@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
       - name: {{ $serviceName }}
-        image: {{ $.Values.imageRegistry }}/crewup-{{ $serviceName }}:{{ $.Values.imageTag }}
+        image: {{ $.Values.imageRegistry }}/crewup-{{ $serviceName }}:{{ $config.imageTag }}
         imagePullPolicy: {{ $.Values.imagePullPolicy }}
         ports:
         - containerPort: {{ $config.port }}

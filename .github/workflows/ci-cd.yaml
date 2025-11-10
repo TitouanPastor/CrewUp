@@ -4,6 +4,16 @@ on:
   push:
     branches:
       - main
+    paths:
+      # Ne déclenche que si ces fichiers changent
+      - 'frontend/**'
+      - 'event/**'
+      - 'group/**'
+      - 'rating/**'
+      - 'safety/**'
+      - 'user/**'
+      - 'helm/**'
+      - '.github/workflows/ci-cd.yaml'
   pull_request:
     branches:
       - main
@@ -18,21 +28,80 @@ env:
   IMAGE_PREFIX: ghcr.io/titouanpastor/crewup
 
 jobs:
-  # Build et push toutes les images
+  # Détecte quels services ont changé
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.changes.outputs.frontend }}
+      event: ${{ steps.changes.outputs.event }}
+      group: ${{ steps.changes.outputs.group }}
+      rating: ${{ steps.changes.outputs.rating }}
+      safety: ${{ steps.changes.outputs.safety }}
+      user: ${{ steps.changes.outputs.user }}
+      any_service: ${{ steps.changes.outputs.frontend == 'true' || steps.changes.outputs.event == 'true' || steps.changes.outputs.group == 'true' || steps.changes.outputs.rating == 'true' || steps.changes.outputs.safety == 'true' || steps.changes.outputs.user == 'true' }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            frontend:
+              - 'frontend/**'
+            event:
+              - 'event/**'
+            group:
+              - 'group/**'
+            rating:
+              - 'rating/**'
+            safety:
+              - 'safety/**'
+            user:
+              - 'user/**'
+
+  # Build et push seulement les images qui ont changé
   build-and-push:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.any_service == 'true'
     runs-on: ubuntu-latest
     strategy:
       matrix:
         service: [frontend, event, group, rating, safety, user]
+        # Include/exclude basé sur les changements détectés
+        include:
+          - service: frontend
+          - service: event
+          - service: group
+          - service: rating
+          - service: safety
+          - service: user
+    # Skip si ce service spécifique n'a pas changé
     steps:
+      - name: Check if service changed
+        id: should_build
+        run: |
+          if [[ "${{ matrix.service }}" == "frontend" && "${{ needs.detect-changes.outputs.frontend }}" == "true" ]] || \
+             [[ "${{ matrix.service }}" == "event" && "${{ needs.detect-changes.outputs.event }}" == "true" ]] || \
+             [[ "${{ matrix.service }}" == "group" && "${{ needs.detect-changes.outputs.group }}" == "true" ]] || \
+             [[ "${{ matrix.service }}" == "rating" && "${{ needs.detect-changes.outputs.rating }}" == "true" ]] || \
+             [[ "${{ matrix.service }}" == "safety" && "${{ needs.detect-changes.outputs.safety }}" == "true" ]] || \
+             [[ "${{ matrix.service }}" == "user" && "${{ needs.detect-changes.outputs.user }}" == "true" ]]; then
+            echo "should_build=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_build=false" >> $GITHUB_OUTPUT
+          fi
+      
       - name: Checkout code
+        if: steps.should_build.outputs.should_build == 'true'
         uses: actions/checkout@v4
       
       - name: Set up image tag
+        if: steps.should_build.outputs.should_build == 'true'
         id: tag
         run: echo "IMAGE_TAG=${GITHUB_SHA::7}" >> $GITHUB_ENV
       
       - name: Login to GitHub Container Registry
+        if: steps.should_build.outputs.should_build == 'true'
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -40,6 +109,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Build and push ${{ matrix.service }}
+        if: steps.should_build.outputs.should_build == 'true'
         uses: docker/build-push-action@v5
         with:
           context: ./${{ matrix.service }}
@@ -50,26 +120,53 @@ jobs:
 
   # Update Helm values.yaml avec le nouveau tag
   update-helm-values:
-    needs: build-and-push
-    if: github.event_name == 'push'
+    needs: [detect-changes, build-and-push]
+    # Ne update que si des services ont changé
+    if: github.event_name == 'push' && needs.detect-changes.outputs.any_service == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    strategy:
+      matrix:
+        service: [frontend, event, group, rating, safety, user]
     steps:
+      - name: Check if service changed
+        id: should_update
+        run: |
+          if [[ "${{ matrix.service }}" == "frontend" && "${{ needs.detect-changes.outputs.frontend }}" == "true" ]] || \
+             [[ "${{ matrix.service }}" == "event" && "${{ needs.detect-changes.outputs.event }}" == "true" ]] || \
+             [[ "${{ matrix.service }}" == "group" && "${{ needs.detect-changes.outputs.group }}" == "true" ]] || \
+             [[ "${{ matrix.service }}" == "rating" && "${{ needs.detect-changes.outputs.rating }}" == "true" ]] || \
+             [[ "${{ matrix.service }}" == "safety" && "${{ needs.detect-changes.outputs.safety }}" == "true" ]] || \
+             [[ "${{ matrix.service }}" == "user" && "${{ needs.detect-changes.outputs.user }}" == "true" ]]; then
+            echo "should_update=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_update=false" >> $GITHUB_OUTPUT
+          fi
+      
       - name: Checkout code
+        if: steps.should_update.outputs.should_update == 'true'
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Set up image tag
+        if: steps.should_update.outputs.should_update == 'true'
         id: tag
         run: echo "IMAGE_TAG=${GITHUB_SHA::7}" >> $GITHUB_ENV
       
-      - name: Update image tag in values.yaml
+      - name: Update image tag for ${{ matrix.service }}
+        if: steps.should_update.outputs.should_update == 'true'
         run: |
-          sed -i "s/imageTag: .*/imageTag: ${{ env.IMAGE_TAG }}/" helm/crewup/values.yaml
+          if [[ "${{ matrix.service }}" == "frontend" ]]; then
+            sed -i "s/^\(  imageTag: \).*/\1${{ env.IMAGE_TAG }}/" helm/crewup/values.yaml
+          else
+            # Pour les services API, update dans la section services.<service>.imageTag
+            sed -i "/^  ${{ matrix.service }}:/,/^  [a-z]/ s/^\(    imageTag: \).*/\1${{ env.IMAGE_TAG }}/" helm/crewup/values.yaml
+          fi
       
       - name: Commit and push if changed
+        if: steps.should_update.outputs.should_update == 'true'
         run: |
           git config --global user.name 'GitHub Actions Bot'
           git config --global user.email 'actions@github.com'
@@ -77,6 +174,6 @@ jobs:
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "chore: update image tag to ${{ env.IMAGE_TAG }} [skip ci]"
+            git commit -m "chore: update ${{ matrix.service }} image tag to ${{ env.IMAGE_TAG }} [skip ci]"
             git push
           fi
