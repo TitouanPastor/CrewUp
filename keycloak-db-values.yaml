@@ -1,0 +1,15 @@
+# PostgreSQL configuration for Keycloak
+postgres:
+  name: postgres
+  replicas: 1
+  port: 5432
+  image: postgres:15-alpine
+  
+  storage:
+    size: 5Gi
+    storageClass: ""
+  
+  # Database for Keycloak
+  database: keycloak
+  username: keycloak
+  password: ""

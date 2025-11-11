@@ -1,5 +1,5 @@
 export interface User {
-  id: number;
+  id: number | string;  // Support both numeric and UUID from Keycloak
   email: string;
   first_name: string;
   last_name: string;
