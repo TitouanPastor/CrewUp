@@ -64,4 +64,4 @@ ingress:
   enabled: true
   className: traefik
   # Use letsencrypt-staging for testing, letsencrypt-prod for production
-  certIssuer: letsencrypt-staging
+  certIssuer: letsencrypt-prod
