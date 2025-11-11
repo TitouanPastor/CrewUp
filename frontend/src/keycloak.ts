@@ -5,6 +5,7 @@ const keycloakConfig = {
   url: 'https://keycloak.ltu-m7011e-3.se',
   realm: 'crewup',
   clientId: 'crewup-frontend',
+  // clientId: 'crewup-test', // For local testing
 };
 
 // Initialize Keycloak instance
