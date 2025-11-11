@@ -1,68 +1,70 @@
 import { create } from 'zustand';
 import { User } from '../types';
+import keycloak from '../keycloak';
 
 interface AuthState {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (data: RegisterData) => Promise<void>;
+  isLoading: boolean;
+  initKeycloak: () => Promise<void>;
+  login: () => void;
   logout: () => void;
   setUser: (user: User) => void;
 }
 
-interface RegisterData {
-  email: string;
-  password: string;
-  first_name: string;
-  last_name: string;
-  bio?: string;
-}
-
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
-  token: localStorage.getItem('token'),
-  isAuthenticated: !!localStorage.getItem('token'),
+  token: null,
+  isAuthenticated: false,
+  isLoading: true,
 
-  login: async (email: string, _password: string) => {
-    // TODO: Call API
-    // For now, mock login
-    const mockUser: User = {
-      id: 1,
-      email,
-      first_name: 'John',
-      last_name: 'Doe',
-      bio: 'Party enthusiast!',
-      created_at: new Date().toISOString(),
-      reputation: {
-        average_rating: 4.5,
-        total_reviews: 12,
-      },
-    };
-    const mockToken = 'mock-jwt-token';
-    
-    localStorage.setItem('token', mockToken);
-    set({ user: mockUser, token: mockToken, isAuthenticated: true });
+  initKeycloak: async () => {
+    try {
+      const authenticated = await keycloak.init({
+        onLoad: 'check-sso',
+        checkLoginIframe: false,
+        pkceMethod: 'S256',
+      });
+
+      if (authenticated && keycloak.tokenParsed) {
+        // Extract user info from token
+        const mockUser: User = {
+          id: keycloak.tokenParsed.sub || '',
+          email: keycloak.tokenParsed.email || '',
+          first_name: keycloak.tokenParsed.given_name || '',
+          last_name: keycloak.tokenParsed.family_name || '',
+          created_at: new Date().toISOString(),
+        };
+
+        set({
+          user: mockUser,
+          token: keycloak.token || null,
+          isAuthenticated: true,
+          isLoading: false,
+        });
+
+        // Setup token refresh
+        setInterval(() => {
+          keycloak.updateToken(70).catch(() => {
+            console.error('Failed to refresh token');
+          });
+        }, 60000); // Refresh every minute
+      } else {
+        set({ isLoading: false });
+      }
+    } catch (error) {
+      console.error('Keycloak initialization failed:', error);
+      set({ isLoading: false });
+    }
   },
 
-  register: async (data: RegisterData) => {
-    // TODO: Call API
-    const mockUser: User = {
-      id: 2,
-      email: data.email,
-      first_name: data.first_name,
-      last_name: data.last_name,
-      bio: data.bio,
-      created_at: new Date().toISOString(),
-    };
-    const mockToken = 'mock-jwt-token';
-    
-    localStorage.setItem('token', mockToken);
-    set({ user: mockUser, token: mockToken, isAuthenticated: true });
+  login: () => {
+    keycloak.login();
   },
 
   logout: () => {
-    localStorage.removeItem('token');
+    keycloak.logout();
     set({ user: null, token: null, isAuthenticated: false });
   },
 

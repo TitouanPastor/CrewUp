@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
-import { User, Mail, Edit2, Save, X, Star } from 'lucide-react';
+import { User, Mail, Edit2, Save, X, Star, LogOut } from 'lucide-react';
 
 export default function ProfilePage() {
-  const { user } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const [isEditing, setIsEditing] = useState(false);
   const [bio, setBio] = useState(user?.bio || '');
 
@@ -153,6 +153,20 @@ export default function ProfilePage() {
               <p className="text-sm text-gray-600 mt-1">1 week ago</p>
             </div>
           </div>
+        </div>
+      </Card>
+
+      {/* Logout Section */}
+      <Card>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">Account Settings</h2>
+            <p className="text-sm text-gray-600 mt-1">Manage your account and authentication</p>
+          </div>
+          <Button onClick={logout} variant="secondary" className="flex items-center gap-2">
+            <LogOut className="w-4 h-4" />
+            Logout
+          </Button>
         </div>
       </Card>
     </div>

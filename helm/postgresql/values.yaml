@@ -1,0 +1,16 @@
+# PostgreSQL Configuration
+postgres:
+  name: postgres
+  replicas: 1
+  port: 5432
+  image: postgres:15-alpine
+  
+  # Storage
+  storage:
+    size: 5Gi
+    storageClass: ""  # Use default
+  
+  # Database credentials
+  database: keycloak
+  username: keycloak
+  password: ""

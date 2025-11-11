@@ -1,0 +1,41 @@
+postgres:
+  storageClassName: "local-path"
+  timezone: "Europe/Stockholm"
+  user: "keycloak"
+  password: ""
+  image: "postgres:16"
+  resourceLimit: false
+  cpu: "1000m"
+  memory: "1000Mi"
+  storage: "5Gi"
+
+keycloak:
+  replicas: 1
+  image: quay.io/keycloak/keycloak:23.0
+
+  # Admin credentials (CHANGE THESE!)
+  adminUser: admin
+  adminPassword: ""
+
+  # Database configuration
+  database:
+    vendor: postgres
+    host: postgres-service.keycloak-db.svc.cluster.local
+    port: 5432
+    database: keycloak
+    username: keycloak
+    password: ""
+
+  # Resource limits (optional)
+  #resources:
+  #  limits:
+  #    cpu: 1000m
+  #    memory: 1Gi
+  #  requests:
+  #    cpu: 500m
+  #    memory: 512Mi
+
+# Ingress configuration
+domain: keycloak.ltu-m7011e-3.se  # Change to your domain
+email: titpas-5@student.ltu.se              # Change to your email
+certIssuer: letsencrypt-staging       # Use letsencrypt-prod for production

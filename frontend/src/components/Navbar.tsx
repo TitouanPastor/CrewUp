@@ -1,13 +1,10 @@
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Calendar, User, LogOut, AlertTriangle } from 'lucide-react';
-import { useAuthStore } from '../stores/authStore';
+import { Link, useLocation } from 'react-router-dom';
+import { Home, Calendar, User, AlertTriangle } from 'lucide-react';
 import { useAppStore } from '../stores/appStore';
 import { useState, useRef, useEffect } from 'react';
 
 export default function Navbar() {
   const location = useLocation();
-  const navigate = useNavigate();
-  const { logout } = useAuthStore();
   const { isPartyMode, togglePartyMode } = useAppStore();
   const [isLongPressing, setIsLongPressing] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -44,11 +41,6 @@ export default function Navbar() {
       if (progressInterval.current) clearInterval(progressInterval.current);
     };
   }, []);
-
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -106,14 +98,6 @@ export default function Navbar() {
                 />
                 <AlertTriangle className="w-5 h-5 relative z-10" />
                 <span className="font-medium relative z-10">{isPartyMode ? 'Alert ON' : 'Hold 2s'}</span>
-              </button>
-              
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
-              >
-                <LogOut className="w-5 h-5" />
-                <span className="font-medium">Logout</span>
               </button>
             </div>
           </div>
