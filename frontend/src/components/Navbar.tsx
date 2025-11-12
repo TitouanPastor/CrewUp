@@ -13,7 +13,7 @@ import {
 
 export default function Navbar() {
   const location = useLocation();
-  const { theme, setTheme } = useTheme();
+  const { setTheme } = useTheme();
   const { isPartyMode, togglePartyMode } = useAppStore();
   const [isLongPressing, setIsLongPressing] = useState(false);
   const [progress, setProgress] = useState(0);

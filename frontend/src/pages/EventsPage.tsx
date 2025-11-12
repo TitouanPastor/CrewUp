@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, MapPin, Users, Search, Filter, SlidersHorizontal } from 'lucide-react';
+import { Calendar, MapPin, Users, Search, SlidersHorizontal } from 'lucide-react';
 import { Event } from '../types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -124,7 +124,7 @@ export default function EventsPage() {
   const filteredEvents = mockEvents
     .filter((event) => {
       const matchesSearch = event.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           event.description.toLowerCase().includes(searchQuery.toLowerCase());
+                           (event.description?.toLowerCase() || '').includes(searchQuery.toLowerCase());
       const matchesType = selectedType === 'all' || event.event_type === selectedType;
       return matchesSearch && matchesType;
     })
@@ -132,7 +132,7 @@ export default function EventsPage() {
       if (sortBy === 'date') {
         return new Date(a.event_start).getTime() - new Date(b.event_start).getTime();
       } else if (sortBy === 'popular') {
-        return b.attendees_count - a.attendees_count;
+        return (b.attendees_count || 0) - (a.attendees_count || 0);
       }
       return 0;
     });

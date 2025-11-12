@@ -4,7 +4,6 @@ import { Send, Users, ArrowLeft, MoreVertical, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   DropdownMenu,
@@ -22,7 +21,7 @@ interface ChatMessage {
 }
 
 export default function GroupChatPage() {
-  const { id } = useParams();
+  const { id: _groupId } = useParams(); // groupId for future API calls
   const navigate = useNavigate();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([
