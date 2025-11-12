@@ -149,3 +149,4 @@ kubectl delete pod -n keycloak -l app=keycloak
 - [Keycloakify Documentation](https://www.keycloakify.dev/)
 - [Keycloak Themes Guide](https://www.keycloak.org/docs/latest/server_development/#_themes)
 - [Template Repository](https://github.com/nima70/keycloakify-tailwind-shadcn)
+- [Tutorial (Fast Keycloak Theme Customization: Keycloakify-Tailwind-ShadCN Guide in 100 Seconds)](https://javascript.plainenglish.io/fast-keycloak-theme-customization-keycloakify-tailwind-shadcn-guide-in-100-seconds-2cee5848b0d1)

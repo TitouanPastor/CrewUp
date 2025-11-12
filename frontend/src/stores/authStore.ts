@@ -22,7 +22,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   initKeycloak: async () => {
     try {
       const authenticated = await keycloak.init({
-        onLoad: 'check-sso',
+        onLoad: 'login-required', // Auto-redirect to Keycloak if not authenticated
         checkLoginIframe: false,
         pkceMethod: 'S256',
       });
