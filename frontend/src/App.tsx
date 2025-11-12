@@ -6,6 +6,7 @@ import EventsPage from './pages/EventsPage';
 import EventDetailPage from './pages/EventDetailPage';
 import GroupChatPage from './pages/GroupChatPage';
 import ProfilePage from './pages/ProfilePage';
+import NotFoundPage from './pages/NotFoundPage';
 import { useAuthStore } from './stores/authStore';
 
 function App() {
@@ -36,6 +37,8 @@ function App() {
           <Route path="events/:id" element={<EventDetailPage />} />
           <Route path="groups/:id" element={<GroupChatPage />} />
           <Route path="profile" element={<ProfilePage />} />
+          {/* Catch-all route for 404 */}
+          <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>
     </Router>
