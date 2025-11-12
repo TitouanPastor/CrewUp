@@ -14,6 +14,24 @@ spec:
       labels:
         app: keycloak
     spec:
+      # Init container to copy the theme from theme image
+      initContainers:
+      - name: custom-theme
+        image: ghcr.io/titouanpastor/keycloak-theme:latest
+        imagePullPolicy: Always
+        command:
+          - sh
+        args:
+          - -c
+          - |
+            echo "Copying CrewUp theme..."
+            cp -v /theme/*.jar /providers/
+            echo "Theme copied successfully!"
+            ls -la /providers/
+        volumeMounts:
+          - name: theme
+            mountPath: /providers
+      
       containers:
       - name: keycloak
         image: {{ .Values.keycloak.image }}
@@ -75,5 +93,12 @@ spec:
           initialDelaySeconds: 60
           periodSeconds: 10
           timeoutSeconds: 5
+        volumeMounts:
+        - name: theme
+          mountPath: /opt/keycloak/providers
         resources:
           {{- toYaml .Values.keycloak.resources | nindent 10 }}
+      
+      volumes:
+      - name: theme
+        emptyDir: {}
