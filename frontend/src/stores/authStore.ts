@@ -13,6 +13,10 @@ interface AuthState {
   setUser: (user: User) => void;
 }
 
+// Flag to prevent double initialization
+let isInitializing = false;
+let isInitialized = false;
+
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   token: null,
@@ -20,12 +24,21 @@ export const useAuthStore = create<AuthState>((set) => ({
   isLoading: true,
 
   initKeycloak: async () => {
+    // Prevent multiple initializations
+    if (isInitializing || isInitialized) {
+      return;
+    }
+    
+    isInitializing = true;
+    
     try {
       const authenticated = await keycloak.init({
         onLoad: 'login-required', // Auto-redirect to Keycloak if not authenticated
         checkLoginIframe: false,
         pkceMethod: 'S256',
       });
+      
+      isInitialized = true;
 
       if (authenticated && keycloak.tokenParsed) {
         // Extract user info from token
@@ -56,6 +69,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     } catch (error) {
       console.error('Keycloak initialization failed:', error);
       set({ isLoading: false });
+    } finally {
+      isInitializing = false;
     }
   },
 

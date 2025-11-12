@@ -38,9 +38,9 @@ export default function Login(props: PageProps<Extract<KcContext, { pageId: "log
             displayInfo={realm.password && realm.registrationAllowed && !registrationDisabled}
             infoNode={
                 <div id="kc-registration" className="">
-                    <span className="text-foreground text-xl">
+                    <span className="text-foreground text-sm">
                         {msgStr("noAccount")}{" "}
-                        <a tabIndex={8} href={url.registrationUrl} className="mx-5 link-style ">
+                        <a tabIndex={8} href={url.registrationUrl} className="link-style">
                             {msgStr("doRegister")}
                         </a>
                     </span>
@@ -63,7 +63,7 @@ export default function Login(props: PageProps<Extract<KcContext, { pageId: "log
                         >
                             {!usernameHidden && (
                                 <div>
-                                    <Label htmlFor="username" className="text-lg">
+                                    <Label htmlFor="username" className="text-sm font-medium">
                                         {!realm.loginWithEmailAllowed
                                             ? msg("username")
                                             : !realm.registrationEmailAsUsername
@@ -95,7 +95,7 @@ export default function Login(props: PageProps<Extract<KcContext, { pageId: "log
                             )}
 
                             <div>
-                                <Label htmlFor="password" className="text-lg">
+                                <Label htmlFor="password" className="text-sm font-medium">
                                     {msg("password")}
                                 </Label>
                                 <PasswordWrapper kcClsx={kcClsx} i18n={i18n} passwordInputId="password">
@@ -121,10 +121,10 @@ export default function Login(props: PageProps<Extract<KcContext, { pageId: "log
                                 )}
                             </div>
 
-                            <div className="space-y-2 md:space-y-0 md:flex md:justify-between text-lg ">
+                            <div className="space-y-2 md:space-y-0 md:flex md:justify-between text-sm">
                                 <div>
                                     {realm.rememberMe && !usernameHidden && (
-                                        <div className="flex items-center space-x-2 ">
+                                        <div className="flex items-center space-x-2">
                                             <input
                                                 tabIndex={5}
                                                 // id="rememberMe"
@@ -133,12 +133,11 @@ export default function Login(props: PageProps<Extract<KcContext, { pageId: "log
                                                 type="checkbox"
                                                 defaultChecked={!!login.rememberMe}
                                             />
-                                            <span>{msgStr("rememberMe")}</span>
+                                            <span className="text-sm">{msgStr("rememberMe")}</span>
                                         </div>
                                     )}
                                 </div>
-                                <div className=" link-style">
-                                    {realm.resetPasswordAllowed && (
+                                <div className="link-style">{realm.resetPasswordAllowed && (
                                         <span>
                                             <a tabIndex={6} href={url.loginResetCredentialsUrl}>
                                                 {msgStr("doForgotPassword")}

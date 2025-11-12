@@ -183,10 +183,10 @@ export function Template(props: TemplateProps<KcContext, I18n>) {
                         {languageSelector()}
                         <ModeToggle />
                     </div>
-                    <header className="text-center  ">
+                    <header className="text-center">
                         {(() => {
                             const node = !(auth !== undefined && auth.showUsername && !auth.showResetCredentials) ? (
-                                <h1 id="kc-page-title">{headerNode}</h1>
+                                <h1 id="kc-page-title" className="text-2xl font-semibold text-foreground">{headerNode}</h1>
                             ) : (
                                 <div id="kc-username" className={kcClsx("kcFormGroupClass")}>
                                     <label id="kc-attempted-username">{auth.attemptedUsername}</label>

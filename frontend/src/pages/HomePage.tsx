@@ -4,8 +4,10 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import { Icon } from 'leaflet';
 import { Calendar, MapPin, Users, Map, List } from 'lucide-react';
 import { Event } from '../types';
-import Card from '../components/ui/Card';
-import Button from '../components/ui/Button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import 'leaflet/dist/leaflet.css';
 
 // Fix for default marker icons
@@ -81,87 +83,85 @@ export default function HomePage() {
   };
 
   return (
-    <div className="h-[calc(100vh-4rem)] md:h-[calc(100vh-4rem)]">
-      {/* Mobile: Toggle buttons */}
-      <div className="md:hidden bg-white border-b border-gray-200 px-4 py-3 flex gap-2">
-        <Button
-          variant={viewMode === 'map' ? 'primary' : 'secondary'}
-          onClick={() => setViewMode('map')}
-          size="sm"
-          className="flex-1"
-        >
-          <Map className="w-4 h-4" />
-          Map
-        </Button>
-        <Button
-          variant={viewMode === 'list' ? 'primary' : 'secondary'}
-          onClick={() => setViewMode('list')}
-          size="sm"
-          className="flex-1"
-        >
-          <List className="w-4 h-4" />
-          List
-        </Button>
+    <div className="h-[calc(100dvh-4rem)] md:h-[calc(100dvh-4rem)]">
+      {/* Mobile: Toggle View Mode */}
+      <div className="md:hidden bg-background border-b border-border px-4 py-3">
+        <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'map' | 'list')} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="map" className="gap-2">
+              <Map className="w-4 h-4" />
+              Map
+            </TabsTrigger>
+            <TabsTrigger value="list" className="gap-2">
+              <List className="w-4 h-4" />
+              List
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
       <div className="h-full flex">
-        {/* Desktop: List on left, Map on right */}
-        {/* Mobile: Toggle between map and list */}
-        
         {/* Events List */}
         <div className={`
           ${viewMode === 'list' ? 'block' : 'hidden'}
           md:block
           w-full md:w-2/5 lg:w-1/3
           h-full overflow-y-auto
-          bg-gray-50
+          bg-background
         `}>
-          <div className="p-4 space-y-3">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-              Events Near You
-            </h2>
+          <div className="p-4 md:p-6 space-y-4">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight mb-1">
+                Events Near You
+              </h1>
+              <p className="text-muted-foreground">
+                Find your crew for tonight
+              </p>
+            </div>
             
-            {mockEvents.map((event) => (
-              <Card
-                key={event.id}
-                onClick={() => handleEventClick(event.id)}
-                className="hover:shadow-md transition-shadow cursor-pointer"
-              >
-                <div className="space-y-3">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {event.name}
-                    </h3>
-                    <p className="text-sm text-gray-600 mt-1 line-clamp-2">
-                      {event.description}
-                    </p>
-                  </div>
-
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center gap-2 text-gray-700">
-                      <Calendar className="w-4 h-4 text-primary-600" />
-                      <span className="font-medium">{formatDate(event.event_start)}</span>
-                    </div>
-                    
-                    <div className="flex items-center gap-2 text-gray-700">
-                      <MapPin className="w-4 h-4 text-primary-600" />
-                      <span>{event.address}</span>
+            <div className="space-y-3">
+              {mockEvents.map((event) => (
+                <Card
+                  key={event.id}
+                  onClick={() => handleEventClick(event.id)}
+                  className="hover:shadow-lg hover:border-primary/50 transition-all cursor-pointer overflow-hidden group"
+                >
+                  <CardContent className="p-4 space-y-3">
+                    <div>
+                      <h3 className="text-lg font-semibold mb-1 group-hover:text-primary transition-colors">
+                        {event.name}
+                      </h3>
+                      <p className="text-sm text-muted-foreground line-clamp-2">
+                        {event.description}
+                      </p>
                     </div>
 
-                    <div className="flex items-center gap-2 text-gray-700">
-                      <Users className="w-4 h-4 text-primary-600" />
-                      <span>{event.attendees_count} going · {event.groups_count} groups</span>
-                    </div>
-                  </div>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center gap-2 text-foreground">
+                        <Calendar className="w-4 h-4 text-primary" />
+                        <span className="font-medium">{formatDate(event.event_start)}</span>
+                      </div>
+                      
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <MapPin className="w-4 h-4 text-primary" />
+                        <span className="line-clamp-1">{event.address}</span>
+                      </div>
 
-                  <div className="pt-2 border-t border-gray-100">
-                    <span className="inline-block px-3 py-1 bg-primary-50 text-primary-700 rounded-full text-xs font-medium">
-                      {event.event_type}
-                    </span>
-                  </div>
-                </div>
-              </Card>
-            ))}
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Users className="w-4 h-4 text-primary" />
+                        <span>{event.attendees_count} going · {event.groups_count} groups</span>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-border">
+                      <Badge variant="secondary" className="capitalize">
+                        {event.event_type}
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -189,14 +189,15 @@ export default function HomePage() {
               >
                 <Popup>
                   <div className="p-2 min-w-[200px]">
-                    <h3 className="font-bold text-gray-900 mb-2">{event.name}</h3>
-                    <p className="text-sm text-gray-600 mb-2">{event.address}</p>
-                    <button
+                    <h3 className="font-bold mb-2">{event.name}</h3>
+                    <p className="text-sm text-muted-foreground mb-3">{event.address}</p>
+                    <Button
+                      size="sm"
                       onClick={() => handleEventClick(event.id)}
-                      className="text-sm text-primary-600 font-semibold hover:text-primary-700"
+                      className="w-full"
                     >
                       View Details →
-                    </button>
+                    </Button>
                   </div>
                 </Popup>
               </Marker>
