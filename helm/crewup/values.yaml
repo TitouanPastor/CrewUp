@@ -56,7 +56,7 @@ frontend:
   enabled: true
   replicas: 1
   port: 80
-  imageTag: bf3b24a
+  imageTag: bd022f4
   image: crewup-frontend  # Local built image name
 
 # Ingress Settings
