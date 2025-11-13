@@ -1,0 +1,14 @@
+# Test database (auto-deleted)
+test.db
+*.db
+
+# Pytest cache
+__pycache__/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE
+.vscode/
+.idea/
+*.swp
