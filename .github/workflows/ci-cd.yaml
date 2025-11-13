@@ -14,6 +14,7 @@ on:
       - 'user/**'
       - 'helm/**'
       - '.github/workflows/ci-cd.yaml'
+  # Pull requests: only run tests, no builds
   pull_request:
     branches:
       - main
@@ -31,6 +32,8 @@ jobs:
   # Détecte quels services ont changé
   detect-changes:
     runs-on: ubuntu-latest
+    # Only run on push to main (skip on PRs)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     outputs:
       frontend: ${{ steps.changes.outputs.frontend }}
       event: ${{ steps.changes.outputs.event }}
