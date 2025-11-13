@@ -7,7 +7,7 @@ WORKDIR /app
 ARG VITE_API_URL=https://api.ltu-m7011e-3.se/api/v1
 ARG VITE_KEYCLOAK_URL=https://keycloak.ltu-m7011e-3.se
 ARG VITE_KEYCLOAK_REALM=crewup
-ARG VITE_KEYCLOAK_CLIENT_ID=crewup-client
+ARG VITE_KEYCLOAK_CLIENT_ID=crewup-frontend
 
 # Set environment variables from build args
 ENV VITE_API_URL=$VITE_API_URL
