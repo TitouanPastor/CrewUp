@@ -187,13 +187,15 @@ jobs:
           git config --global user.name 'GitHub Actions Bot'
           git config --global user.email 'actions@github.com'
           
-          # Pull latest changes to avoid conflicts
-          git pull --rebase origin main
-          
           git add helm/crewup/values.yaml
+          
+          # Check if there are changes
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
+            # Pull latest changes with rebase (stash if needed)
+            git pull --rebase --autostash origin main
+            
             git commit -m "chore: update image tags to ${{ env.IMAGE_TAG }} [${{ env.CHANGED_SERVICES }}] [skip ci]"
             git push origin main
           fi
