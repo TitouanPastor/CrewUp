@@ -36,7 +36,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export default function ProfilePage() {
-  const { user: keycloakUser, logout } = useAuthStore();
+  const { logout } = useAuthStore();
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
   
