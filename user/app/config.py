@@ -13,21 +13,15 @@ class Config:
     SERVICE_NAME: str = "user"
     
     # Database configuration
-    # Priority: DATABASE_URL > constructed from individual vars > local default
+    # Database configuration - constructed from environment variables
     @staticmethod
     def get_database_url() -> str:
         """
-        Get PostgreSQL connection URL.
+        Get PostgreSQL connection URL from individual environment variables.
         
         Local dev: postgresql://crewup:crewup_dev_password@localhost:5432/crewup
-        K8s: postgresql://crewup:crewup_k8s_secure_2024@postgres:5432/crewup
+        K8s: postgresql://crewup:<secret>@postgres:5432/crewup
         """
-        # Try full DATABASE_URL first (easiest for both environments)
-        db_url = os.getenv("DATABASE_URL")
-        if db_url:
-            return db_url
-        
-        # Construct from individual environment variables
         user = os.getenv("POSTGRES_USER", "crewup")
         password = os.getenv("POSTGRES_PASSWORD", "crewup_dev_password")
         host = os.getenv("POSTGRES_HOST", "localhost")

@@ -29,8 +29,6 @@ spec:
           value: {{ $serviceName }}
         {{- if $.Values.postgres.enabled }}
         # Database connection environment variables
-        - name: DATABASE_URL
-          value: "postgresql://{{ $.Values.postgres.user }}:{{ $.Values.postgres.password }}@postgres:5432/{{ $.Values.postgres.database }}"
         - name: POSTGRES_HOST
           value: postgres
         - name: POSTGRES_PORT
