@@ -146,37 +146,37 @@ jobs:
           
           # Frontend
           if [[ "${{ needs.detect-changes.outputs.frontend }}" == "true" ]]; then
-            sed -i "s/^\(  imageTag: \).*/\1${{ env.IMAGE_TAG }}/" helm/crewup/values.yaml
+            sed -i "s/^\(  imageTag: \).*/\1\"${{ env.IMAGE_TAG }}\"/" helm/crewup/values.yaml
             CHANGED_SERVICES="$CHANGED_SERVICES frontend"
           fi
           
           # Event service
           if [[ "${{ needs.detect-changes.outputs.event }}" == "true" ]]; then
-            sed -i "/^  event:/,/^  [a-z]/ s/^\(    imageTag: \).*/\1${{ env.IMAGE_TAG }}/" helm/crewup/values.yaml
+            sed -i "/^  event:/,/^  [a-z]/ s/^\(    imageTag: \).*/\1\"${{ env.IMAGE_TAG }}\"/" helm/crewup/values.yaml
             CHANGED_SERVICES="$CHANGED_SERVICES event"
           fi
           
           # Group service
           if [[ "${{ needs.detect-changes.outputs.group }}" == "true" ]]; then
-            sed -i "/^  group:/,/^  [a-z]/ s/^\(    imageTag: \).*/\1${{ env.IMAGE_TAG }}/" helm/crewup/values.yaml
+            sed -i "/^  group:/,/^  [a-z]/ s/^\(    imageTag: \).*/\1\"${{ env.IMAGE_TAG }}\"/" helm/crewup/values.yaml
             CHANGED_SERVICES="$CHANGED_SERVICES group"
           fi
           
           # Rating service
           if [[ "${{ needs.detect-changes.outputs.rating }}" == "true" ]]; then
-            sed -i "/^  rating:/,/^  [a-z]/ s/^\(    imageTag: \).*/\1${{ env.IMAGE_TAG }}/" helm/crewup/values.yaml
+            sed -i "/^  rating:/,/^  [a-z]/ s/^\(    imageTag: \).*/\1\"${{ env.IMAGE_TAG }}\"/" helm/crewup/values.yaml
             CHANGED_SERVICES="$CHANGED_SERVICES rating"
           fi
           
           # Safety service
           if [[ "${{ needs.detect-changes.outputs.safety }}" == "true" ]]; then
-            sed -i "/^  safety:/,/^  [a-z]/ s/^\(    imageTag: \).*/\1${{ env.IMAGE_TAG }}/" helm/crewup/values.yaml
+            sed -i "/^  safety:/,/^  [a-z]/ s/^\(    imageTag: \).*/\1\"${{ env.IMAGE_TAG }}\"/" helm/crewup/values.yaml
             CHANGED_SERVICES="$CHANGED_SERVICES safety"
           fi
           
           # User service
           if [[ "${{ needs.detect-changes.outputs.user }}" == "true" ]]; then
-            sed -i "/^  user:/,/^  [a-z]/ s/^\(    imageTag: \).*/\1${{ env.IMAGE_TAG }}/" helm/crewup/values.yaml
+            sed -i "/^  user:/,/^  [a-z]/ s/^\(    imageTag: \).*/\1\"${{ env.IMAGE_TAG }}\"/" helm/crewup/values.yaml
             CHANGED_SERVICES="$CHANGED_SERVICES user"
           fi
           

@@ -37,7 +37,7 @@ services:
     enabled: true  # Has basic health endpoints
     replicas: 1
     port: 8000
-    imageTag: 6845455
+    imageTag: "6845455"
     
   safety:
     enabled: true  # Has basic health endpoints
