@@ -16,7 +16,7 @@ postgres:
   version: "15"
   database: crewup
   user: crewup
-  password: crewup_dev_password  # Change for production!
+  password: crewup_k8s_secure_2024  # Strong password for k8s
   storage: 5Gi  # Disk space for database
 
 # API Services (all FastAPI microservices with minimal implementation)
