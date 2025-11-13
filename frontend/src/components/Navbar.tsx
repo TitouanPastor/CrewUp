@@ -67,7 +67,7 @@ export default function Navbar() {
           <Link to="/" className="flex items-center gap-3 group">
             <div className="relative">
               <img 
-                src="/icon.png" 
+                src="/icon_transparent.png" 
                 alt="CrewUp" 
                 className="h-9 w-9 rounded-xl transition-transform group-hover:scale-105" 
               />
