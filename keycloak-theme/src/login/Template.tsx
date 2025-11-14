@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import logoTransparentUrl from "./assets/icon_transparent.png";
 import { assert } from "keycloakify/tools/assert";
 import { clsx } from "keycloakify/tools/clsx";
 import type { TemplateProps } from "keycloakify/login/TemplateProps";
@@ -173,20 +174,25 @@ export function Template(props: TemplateProps<KcContext, I18n>) {
         );
     };
     return (
-        <div className="bg-background  min-h-screen   flex flex-col items-center justify-center  prose dark:prose-invert max-w-none">
+        <div className="bg-background min-h-screen flex flex-col items-center justify-center prose dark:prose-invert max-w-none">
             <div id="kc-header-wrapper" className="text-center text-foreground hide md:visible">
                 {msgStr("loginTitleHtml", realm.displayNameHtml)}
             </div>
-            <Card className="py-0 px-3  md:-[40rem] shadow-2xl w-full min-h-screen  md:w-[30rem] sm:min-h-fit ">
+            <Card className="py-0 px-3 md:-[40rem] shadow-2xl w-full min-h-screen md:w-[30rem] sm:min-h-fit ">
                 <CardContent className="space-y-8 pb-5 ">
-                    <div className="flex justify-end space-x-4 pt-2">
+                    <div className="flex justify-end space-x-4 pt-6">
                         {languageSelector()}
                         <ModeToggle />
+                    </div>
+                    <div className="flex justify-center" style={{ marginTop: "0.5rem", marginBottom: "-1rem" }}>
+                        <img src={logoTransparentUrl} alt="CrewUp logo" className="w-14 h-14 object-contain" />
                     </div>
                     <header className="text-center">
                         {(() => {
                             const node = !(auth !== undefined && auth.showUsername && !auth.showResetCredentials) ? (
-                                <h1 id="kc-page-title" className="text-2xl font-semibold text-foreground">{headerNode}</h1>
+                                <h1 id="kc-page-title" className="text-2xl font-semibold text-foreground">
+                                    {headerNode}
+                                </h1>
                             ) : (
                                 <div id="kc-username" className={kcClsx("kcFormGroupClass")}>
                                     <label id="kc-attempted-username">{auth.attemptedUsername}</label>

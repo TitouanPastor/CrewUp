@@ -1,8 +1,8 @@
-# Simple image to host the Keycloak theme JAR
+# Image to host the extracted Keycloak theme with favicon
 FROM alpine:latest
 
-# Copy the theme JAR
-COPY crewup-theme.jar /theme/
+# Copy the extracted theme directory
+COPY crewup-theme-extracted/theme/keycloakify-starter /theme/crewup-theme
 
-# Default command (not really used, just for clarity)
+# Default command
 CMD ["sh", "-c", "echo 'Theme image ready'"]

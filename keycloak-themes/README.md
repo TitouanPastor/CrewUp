@@ -4,149 +4,206 @@ This directory contains the Docker image configuration for deploying a custom Ke
 
 ## Overview
 
-The theme is packaged as a JAR file and deployed to Kubernetes using an Alpine-based Docker image. The theme files are copied into the Keycloak pod via an initContainer pattern.
+The theme is extracted from a Keycloakify JAR file and deployed to Kubernetes using an Alpine-based Docker image. The extracted theme files are copied into the Keycloak pod via an initContainer pattern and mounted directly in `/opt/keycloak/themes/`.
 
 ## Structure
 
 ```
 keycloak-themes/
-├── Dockerfile           # Alpine image containing the theme JAR
-├── crewup-theme.jar    # Built theme JAR from Keycloakify
-└── README.md           # This file
+├── Dockerfile                  # Alpine image containing the extracted theme
+├── crewup-theme-extracted/     # Extracted theme files (gitignored)
+├── deploy-theme.sh             # Automated deployment script
+└── README.md                   # This file
 ```
 
-## Building the Theme
+## Quick Start
+
+Use the automated script to extract, build, and deploy the theme:
+
+```bash
+./deploy-theme.sh /path/to/keycloak-theme-for-kc-22-and-above.jar
+```
+
+This script will:
+1. Extract the JAR contents
+2. Copy the favicon from `../frontend/public/favicon.ico`
+3. Build and push the Docker image
+4. Deploy to Kubernetes via Helm
+
+## Manual Process
 
 ### 1. Prerequisites
 
-- Node.js 20+ and npm
-- Maven 3.8+
+- Python 3 (for JAR extraction)
 - Docker
+- Helm 3
+- kubectl configured for your cluster
 
-### 2. Clone and Setup Keycloakify Project
+### 2. Build Theme JAR
+
+From the Keycloakify project:
 
 ```bash
-git clone https://github.com/nima70/keycloakify-tailwind-shadcn.git keycloak-theme
-cd keycloak-theme
+cd ../keycloak-theme
 npm install --legacy-peer-deps
-```
-
-### 3. Customize Theme
-
-Edit `src/styles/global.css` to match your brand colors:
-
-```css
-:root {
-  --primary: 213 94% 68%;        /* Your primary color */
-  --background: 0 0% 98%;         /* Background color */
-  --radius: 0.75rem;              /* Border radius */
-}
-```
-
-### 4. Build Theme JAR
-
-```bash
 npm run build-keycloak-theme
 ```
 
-The JAR file will be generated in `build_keycloak/keycloak-theme-for-kc-22-and-above.jar`.
+The JAR will be generated in `build_keycloak/keycloak-theme-for-kc-22-and-above.jar`.
 
-### 5. Copy JAR to Docker Context
-
-```bash
-cp keycloak-theme/build_keycloak/keycloak-theme-for-kc-22-and-above.jar keycloak-themes/crewup-theme.jar
-```
-
-## Docker Image
-
-### Build and Push
+### 3. Extract JAR and Add Favicon
 
 ```bash
-cd keycloak-themes
+cd ../keycloak-themes
 
-# Build the image
-docker build -t ghcr.io/YOUR_USERNAME/keycloak-theme:latest .
+# Extract JAR using Python
+python3 -m zipfile -e ../keycloak-theme/build_keycloak/keycloak-theme-for-kc-22-and-above.jar crewup-theme-extracted
 
-# Login to GitHub Container Registry
-echo "YOUR_GITHUB_TOKEN" | docker login ghcr.io -u YOUR_USERNAME --password-stdin
-
-# Push the image
-docker push ghcr.io/YOUR_USERNAME/keycloak-theme:latest
+# Copy favicon
+cp ../frontend/public/favicon.ico crewup-theme-extracted/theme/keycloakify-starter/login/resources/img/favicon.ico
 ```
 
-### Make Package Public
+### 4. Build Docker Image
 
-1. Go to https://github.com/YOUR_USERNAME?tab=packages
-2. Select the `keycloak-theme` package
-3. Package settings → Change visibility → Public
+```bash
+docker build -t ghcr.io/titouanpastor/keycloak-theme:latest .
+```
 
-## Kubernetes Deployment
+### 5. Push to Registry
 
-The theme is deployed using an **initContainer** in the Keycloak deployment:
+```bash
+docker push ghcr.io/titouanpastor/keycloak-theme:latest
+```
+
+### 6. Deploy with Helm
+
+```bash
+cd ../keycloak-chart
+helm upgrade --install keycloak . -n keycloak --create-namespace
+kubectl -n keycloak rollout status deployment/keycloak
+```
+
+## Kubernetes Deployment Details
+
+The theme is deployed using an **initContainer** that copies the extracted theme files:
 
 ```yaml
 initContainers:
 - name: custom-theme
-  image: ghcr.io/YOUR_USERNAME/keycloak-theme:latest
+  image: ghcr.io/titouanpastor/keycloak-theme:latest
   imagePullPolicy: Always
   command: [sh, -c]
   args:
     - |
-      echo "Copying theme..."
-      cp -v /theme/*.jar /providers/
+      echo "Copying CrewUp theme to /themes..."
+      cp -rv /theme/crewup-theme /themes/
   volumeMounts:
     - name: theme
-      mountPath: /providers
+      mountPath: /themes
 ```
 
-The theme JAR is copied to a shared `emptyDir` volume mounted at `/opt/keycloak/providers` in the Keycloak container.
+The Keycloak container mounts the same volume at `/opt/keycloak/themes/`:
 
-### Deploy
-
-```bash
-cd keycloak-chart
-helm upgrade keycloak . -n keycloak
+```yaml
+containers:
+- name: keycloak
+  volumeMounts:
+  - name: theme
+    mountPath: /opt/keycloak/themes
 ```
 
 ## Activating the Theme
 
-1. Access Keycloak Admin Console
-2. Select your realm
-3. Navigate to **Realm Settings** → **Themes**
-4. Set **Login Theme** to `keycloakify-starter`
-5. Save changes
+1. Access Keycloak Admin Console: `https://keycloak.ltu-m7011e-3.se`
+2. Select your realm (e.g., `crewup`)
+3. Navigate to **Realm Settings** → **Themes** → **Login Theme**
+4. Select `crewup-theme` from the dropdown
+5. Click **Save**
+6. Test the login page in incognito mode to see the new theme and favicon
+
+## Favicon Location
+
+The favicon must be placed at:
+```
+crewup-theme-extracted/theme/keycloakify-starter/login/resources/img/favicon.ico
+```
+
+It will be accessible in Keycloak at:
+```
+/realms/{realm}/login-actions/resources/{version}/crewup-theme/login/img/favicon.ico
+```
 
 ## Updating the Theme
 
-To update the theme with new changes:
+To update with new changes:
 
 ```bash
-# 1. Modify theme in keycloak-theme/src/
-# 2. Rebuild JAR
-cd keycloak-theme
+# Option 1: Use the automated script
+./deploy-theme.sh ../keycloak-theme/build_keycloak/keycloak-theme-for-kc-22-and-above.jar
+
+# Option 2: Manual steps
+cd ../keycloak-theme
 npm run build-keycloak-theme
 
-# 3. Update Docker image
-cp build_keycloak/keycloak-theme-for-kc-22-and-above.jar ../keycloak-themes/crewup-theme.jar
 cd ../keycloak-themes
-docker build -t ghcr.io/YOUR_USERNAME/keycloak-theme:latest .
-docker push ghcr.io/YOUR_USERNAME/keycloak-theme:latest
+rm -rf crewup-theme-extracted
+python3 -m zipfile -e ../keycloak-theme/build_keycloak/keycloak-theme-for-kc-22-and-above.jar crewup-theme-extracted
+cp ../frontend/public/favicon.ico crewup-theme-extracted/theme/keycloakify-starter/login/resources/img/favicon.ico
 
-# 4. Force pod restart to pull new image
-kubectl delete pod -n keycloak -l app=keycloak
+docker build -t ghcr.io/titouanpastor/keycloak-theme:latest .
+docker push ghcr.io/titouanpastor/keycloak-theme:latest
+
+# Force pod restart to pull new image
+kubectl -n keycloak rollout restart deployment/keycloak
+```
+
+## Verifying Deployment
+
+Check that the theme is mounted correctly:
+
+```bash
+POD=$(kubectl -n keycloak get pods -l app=keycloak -o jsonpath='{.items[0].metadata.name}')
+
+# Verify theme directory
+kubectl -n keycloak exec -it $POD -- ls -la /opt/keycloak/themes/
+
+# Verify favicon
+kubectl -n keycloak exec -it $POD -- ls -la /opt/keycloak/themes/crewup-theme/login/resources/img/favicon.ico
 ```
 
 ## Technical Details
 
 - **Base Image**: Alpine Linux (minimal footprint)
-- **Theme Location in Image**: `/theme/crewup-theme.jar`
-- **Keycloak Provider Path**: `/opt/keycloak/providers/`
+- **Theme Name**: `crewup-theme` (from `keycloakify-starter`)
+- **Theme Location in Image**: `/theme/crewup-theme/`
+- **Keycloak Mount Path**: `/opt/keycloak/themes/crewup-theme/`
 - **Volume Type**: `emptyDir` (ephemeral, recreated on pod restart)
-- **Theme Framework**: Keycloakify v10.0.5 (React + TailwindCSS + ShadCN UI)
+- **Theme Framework**: Keycloakify v10+ (React + TailwindCSS + ShadCN UI)
+- **Favicon Format**: ICO/PNG (130KB, transparent background)
+
+## Troubleshooting
+
+### Theme not appearing in dropdown
+
+1. Check pod logs: `kubectl -n keycloak logs -l app=keycloak --tail=100`
+2. Verify theme is mounted: `kubectl -n keycloak exec -it $POD -- ls /opt/keycloak/themes/`
+3. Restart Keycloak: `kubectl -n keycloak rollout restart deployment/keycloak`
+
+### Favicon not showing
+
+1. Clear browser cache or test in incognito mode
+2. Verify favicon exists: `kubectl -n keycloak exec -it $POD -- ls -la /opt/keycloak/themes/crewup-theme/login/resources/img/favicon.ico`
+3. Check browser DevTools → Network tab for favicon request (should be 200, not 404)
+
+### Old theme still showing
+
+1. Make sure you selected `crewup-theme` in Realm Settings → Themes → Login Theme
+2. Clear Keycloak cache: `kubectl -n keycloak delete pod -l app=keycloak`
+3. Hard refresh the login page: Ctrl+Shift+R (Windows/Linux) or Cmd+Shift+R (Mac)
 
 ## Resources
 
 - [Keycloakify Documentation](https://www.keycloakify.dev/)
 - [Keycloak Themes Guide](https://www.keycloak.org/docs/latest/server_development/#_themes)
 - [Template Repository](https://github.com/nima70/keycloakify-tailwind-shadcn)
-- [Tutorial (Fast Keycloak Theme Customization: Keycloakify-Tailwind-ShadCN Guide in 100 Seconds)](https://javascript.plainenglish.io/fast-keycloak-theme-customization-keycloakify-tailwind-shadcn-guide-in-100-seconds-2cee5848b0d1)
+- [CrewUp Project](https://github.com/TitouanPastor/CrewUp)
