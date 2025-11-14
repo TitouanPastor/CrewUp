@@ -20,7 +20,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 from app.config import config
 
 logger = logging.getLogger(__name__)
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)  # Don't auto-raise 403, allow optional auth
 
 
 @lru_cache(maxsize=1)
@@ -61,6 +61,13 @@ async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(secur
     Raises:
         HTTPException: 401 if token is invalid or expired
     """
+    if credentials is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+    
     token = credentials.credentials
     
     try:
