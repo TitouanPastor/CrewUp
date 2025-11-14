@@ -59,32 +59,6 @@ app.add_exception_handler(Exception, generic_exception_handler)
 # Include routers
 app.include_router(users_router, prefix="/api/v1")
 
-# Public health endpoint (no auth required)
-@app.get("/api/v1/users/health", include_in_schema=False, tags=["health"])
-async def users_health():
-    """Health check for user service (no auth, no DB check)."""
-    return {
-        "status": "healthy",
-        "service": "user-service"
-    }
-
-# Root endpoint
-@app.get("/", include_in_schema=False)
-async def root():
-    """Root endpoint - service info."""
-    return {
-        "service": "user-service",
-        "version": "1.0.0",
-        "status": "running",
-        "docs": "/docs"
-    }
-
-
-@app.get("/health", include_in_schema=False)
-async def health():
-    """Basic health check (no DB dependency)."""
-    return {"status": "healthy"}
-
 
 # Startup event
 @app.on_event("startup")

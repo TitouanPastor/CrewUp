@@ -35,6 +35,15 @@ async def users_root():
     }
 
 
+@router.get("/health", include_in_schema=False, tags=["health"])
+async def health_check():
+    """Health check endpoint (no auth, no DB)."""
+    return {
+        "status": "healthy",
+        "service": "user-service"
+    }
+
+
 @router.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def create_user(
     response: Response,
