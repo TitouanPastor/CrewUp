@@ -37,9 +37,9 @@ app = FastAPI(
     title="CrewUp User Service",
     description="User profile management service with Keycloak authentication",
     version="1.0.0",
-    docs_url="/docs",
-    redoc_url="/redoc",
-    openapi_url="/openapi.json"
+    docs_url="/api/v1/users/docs",
+    redoc_url="/api/v1/users/redoc",
+    openapi_url="/api/v1/users/openapi.json"
 )
 
 # CORS middleware
