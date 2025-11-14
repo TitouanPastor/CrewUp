@@ -49,7 +49,7 @@ services:
     enabled: true  # Has basic health endpoints
     replicas: 1
     port: 8000
-    imageTag: "06e7768"
+    imageTag: "53bc18b"
 
 # Frontend (React + Nginx)
 frontend:
