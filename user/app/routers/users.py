@@ -20,6 +20,21 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/users", tags=["users"])
 
 
+@router.get("", include_in_schema=False)
+async def users_root():
+    """Users API root - available endpoints."""
+    return {
+        "service": "user-service",
+        "endpoints": {
+            "POST /api/v1/users": "Create user profile from token",
+            "GET /api/v1/users/me": "Get current user profile",
+            "PUT /api/v1/users/me": "Update current user profile",
+            "GET /api/v1/users/{user_id}": "Get public user profile",
+            "GET /api/v1/users/health": "Health check"
+        }
+    }
+
+
 @router.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def create_user(
     response: Response,
@@ -213,32 +228,3 @@ async def get_user_profile(
     
     return user
 
-
-@router.get("/health", status_code=status.HTTP_200_OK, include_in_schema=False)
-async def health_check(db: Session = Depends(get_db)):
-    """
-    Health check endpoint.
-    
-    Verifies database connectivity.
-    Not included in OpenAPI docs (internal use).
-    
-    Returns:
-        dict: Health status
-    
-    Raises:
-        503: Database unreachable
-    """
-    try:
-        # Simple query to check DB connection
-        db.execute("SELECT 1")
-        return {
-            "status": "healthy",
-            "service": "user-service",
-            "database": "connected"
-        }
-    except Exception as e:
-        logger.error(f"Health check failed: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Database unavailable"
-        )
