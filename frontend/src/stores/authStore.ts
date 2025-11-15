@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { User } from '../types';
 import keycloak from '../keycloak';
+import { userService } from '../services/userService';
 
 interface AuthState {
   user: User | null;
@@ -56,6 +57,15 @@ export const useAuthStore = create<AuthState>((set) => ({
           isAuthenticated: true,
           isLoading: false,
         });
+
+        // Create/sync user profile in database
+        try {
+          await userService.createProfile();
+          console.log('User profile synced with database');
+        } catch (error) {
+          console.error('Failed to sync user profile:', error);
+          // Non-blocking: user can still use the app even if profile sync fails
+        }
 
         // Setup token refresh
         setInterval(() => {

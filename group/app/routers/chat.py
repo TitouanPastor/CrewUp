@@ -51,7 +51,17 @@ async def websocket_chat(
     try:
         # Validate JWT token
         token_payload = await verify_token_ws(token)
-        user_id = UUID(token_payload["sub"])
+        keycloak_id = token_payload["sub"]
+        
+        # Get user from database
+        from app.db.models import User
+        user = db.query(User).filter(User.keycloak_id == keycloak_id).first()
+        
+        if not user:
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="User profile not found")
+            return
+        
+        user_id = user.id
         
         # Build username from first_name + last_name, fallback to email
         first_name = token_payload.get("given_name", "")

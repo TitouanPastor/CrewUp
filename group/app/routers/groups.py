@@ -55,6 +55,16 @@ async def create_group(
     Creator is automatically added as the first member.
     """
     try:
+        # Get user ID from database using keycloak_id
+        from app.db.models import User
+        user = db.query(User).filter(User.keycloak_id == current_user["keycloak_id"]).first()
+        
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User profile not found. Please create your profile first."
+            )
+        
         # Create group
         new_group = Group(
             event_id=group_data.event_id,
@@ -68,7 +78,7 @@ async def create_group(
         # Add creator as first member
         creator_member = GroupMember(
             group_id=new_group.id,
-            user_id=current_user["keycloak_id"]
+            user_id=user.id
         )
         db.add(creator_member)
         db.commit()
@@ -185,7 +195,19 @@ async def join_group(
             detail=f"Group {group_id} not found"
         )
     
-    user_id = current_user["keycloak_id"]
+    keycloak_id = current_user["keycloak_id"]
+    
+    # Get user ID from database using keycloak_id
+    from app.db.models import User
+    user = db.query(User).filter(User.keycloak_id == keycloak_id).first()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User profile not found. Please create your profile first."
+        )
+    
+    user_id = user.id
     
     # Check if already a member
     existing_member = db.query(GroupMember).filter(
@@ -237,12 +259,20 @@ async def leave_group(
     db: Session = Depends(get_db)
 ):
     """Leave a group."""
-    user_id = current_user["keycloak_id"]
+    # Get user ID from database using keycloak_id
+    from app.db.models import User
+    user = db.query(User).filter(User.keycloak_id == current_user["keycloak_id"]).first()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User profile not found"
+        )
     
     # Check if member
     member = db.query(GroupMember).filter(
         GroupMember.group_id == group_id,
-        GroupMember.user_id == user_id
+        GroupMember.user_id == user.id
     ).first()
     
     if not member:
@@ -256,7 +286,7 @@ async def leave_group(
         db.delete(member)
         db.commit()
         
-        logger.info(f"User {user_id} left group {group_id}")
+        logger.info(f"User {user.id} left group {group_id}")
         return {"message": "Successfully left group"}
     except Exception as e:
         db.rollback()
@@ -283,10 +313,20 @@ async def list_members(
             detail=f"Group {group_id} not found"
         )
     
+    # Get user ID from database
+    from app.db.models import User
+    user = db.query(User).filter(User.keycloak_id == current_user["keycloak_id"]).first()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User profile not found"
+        )
+    
     # Check if requester is a member
     is_member = db.query(GroupMember).filter(
         GroupMember.group_id == group_id,
-        GroupMember.user_id == current_user["keycloak_id"]
+        GroupMember.user_id == user.id
     ).first()
     
     if not is_member:
