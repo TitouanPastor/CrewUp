@@ -375,10 +375,20 @@ async def list_messages(
             detail=f"Group {group_id} not found"
         )
     
+    # Get user ID from database
+    from app.db.models import User
+    user = db.query(User).filter(User.keycloak_id == current_user["keycloak_id"]).first()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User profile not found"
+        )
+    
     # Check if requester is a member
     is_member = db.query(GroupMember).filter(
         GroupMember.group_id == group_id,
-        GroupMember.user_id == current_user["keycloak_id"]
+        GroupMember.user_id == user.id
     ).first()
     
     if not is_member:
