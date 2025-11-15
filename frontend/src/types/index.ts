@@ -12,8 +12,8 @@ export interface User {
 }
 
 export interface Event {
-  id: number;
-  creator_id: number;
+  id: string;  // UUID format
+  creator_id: string;  // UUID format
   name: string;
   description?: string;
   event_type?: string;
@@ -27,7 +27,7 @@ export interface Event {
 }
 
 export interface Group {
-  id: number;
+  id: string;  // UUID format
   event_id: number;
   name: string;
   max_members: number;

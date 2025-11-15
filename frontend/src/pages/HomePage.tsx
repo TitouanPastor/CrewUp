@@ -21,8 +21,8 @@ Icon.Default.mergeOptions({
 // Mock events
 const mockEvents: Event[] = [
   {
-    id: 1,
-    creator_id: 1,
+    id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+    creator_id: 'b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
     name: 'Friday Night at Bishops Arms',
     description: 'Weekly student party with special drinks and great music!',
     event_type: 'bar',
@@ -35,8 +35,8 @@ const mockEvents: Event[] = [
     groups_count: 4,
   },
   {
-    id: 2,
-    creator_id: 2,
+    id: 'a1eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+    creator_id: 'b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
     name: 'Live Music Night',
     description: 'Local bands playing all night long!',
     event_type: 'concert',
@@ -49,8 +49,8 @@ const mockEvents: Event[] = [
     groups_count: 7,
   },
   {
-    id: 3,
-    creator_id: 1,
+    id: 'a2eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+    creator_id: 'b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
     name: 'Karaoke Night',
     description: 'Sing your heart out with friends!',
     event_type: 'bar',
@@ -68,7 +68,7 @@ export default function HomePage() {
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
 
-  const handleEventClick = (eventId: number) => {
+  const handleEventClick = (eventId: string) => {
     navigate(`/events/${eventId}`);
   };
 
@@ -83,7 +83,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="h-[calc(100dvh-4rem)] md:h-[calc(100dvh-4rem)]">
+    <div className="h-[calc(100dvh-5rem)] md:h-[calc(100dvh-4rem)]">
       {/* Mobile: Toggle View Mode */}
       <div className="md:hidden bg-background border-b border-border px-4 py-3">
         <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'map' | 'list')} className="w-full">
