@@ -52,7 +52,16 @@ async def websocket_chat(
         # Validate JWT token
         token_payload = await verify_token_ws(token)
         user_id = UUID(token_payload["sub"])
-        username = token_payload.get("preferred_username", token_payload.get("email", "Unknown"))
+        
+        # Build username from first_name + last_name, fallback to email
+        first_name = token_payload.get("given_name", "")
+        last_name = token_payload.get("family_name", "")
+        if first_name and last_name:
+            username = f"{first_name} {last_name}"
+        elif first_name:
+            username = first_name
+        else:
+            username = token_payload.get("email", "Unknown")
         
         # Check if group exists
         group = db.query(Group).filter(Group.id == group_id).first()

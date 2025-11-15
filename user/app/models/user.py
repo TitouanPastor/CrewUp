@@ -62,6 +62,12 @@ class UserResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     
+    @field_validator('interests', mode='before')
+    @classmethod
+    def convert_none_to_empty_list(cls, v):
+        """Convert None to empty list for database compatibility."""
+        return v if v is not None else []
+    
     class Config:
         from_attributes = True  # Enables ORM mode (SQLAlchemy compatibility)
 
@@ -79,6 +85,12 @@ class UserPublicResponse(BaseModel):
     interests: list[str] = []
     reputation: float = 0.0
     created_at: datetime
+    
+    @field_validator('interests', mode='before')
+    @classmethod
+    def convert_none_to_empty_list(cls, v):
+        """Convert None to empty list for database compatibility."""
+        return v if v is not None else []
     
     class Config:
         from_attributes = True

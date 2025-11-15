@@ -20,7 +20,19 @@ class Config:
     
     @staticmethod
     def get_database_url() -> str:
-        """Construct database URL from individual components."""
+        """
+        Construct database URL from environment variables.
+        
+        Priority:
+        1. DATABASE_URL (full connection string)
+        2. Individual POSTGRES_* variables
+        """
+        # Check for full DATABASE_URL first (Docker Compose, some K8s configs)
+        database_url = os.getenv("DATABASE_URL")
+        if database_url:
+            return database_url
+        
+        # Fall back to individual variables (K8s secrets)
         user = Config.POSTGRES_USER
         password = Config.POSTGRES_PASSWORD
         host = Config.POSTGRES_HOST
