@@ -14,30 +14,29 @@ export default defineConfig({
     host: true,
     port: 3000,
     proxy: {
-      '/api/user': {
-        target: 'http://user:8000',
+      '/api/v1/users': {
+        target: 'http://localhost:8005',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/user/, ''),
       },
-      '/api/event': {
-        target: 'http://event:8000',
+      '/api/v1/events': {
+        target: 'http://localhost:8001',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/event/, ''),
       },
-      '/api/group': {
-        target: 'http://group:8000',
+      '/api/v1/groups': {
+        target: 'http://localhost:8002',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/group/, ''),
       },
-      '/api/rating': {
-        target: 'http://rating:8000',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/rating/, ''),
+      '/api/v1/ws/groups': {
+        target: 'ws://localhost:8002',
+        ws: true,
       },
-      '/api/safety': {
-        target: 'http://safety:8000',
+      '/api/v1/ratings': {
+        target: 'http://localhost:8003',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/safety/, ''),
+      },
+      '/api/v1/safety': {
+        target: 'http://localhost:8004',
+        changeOrigin: true,
       },
     },
   },
