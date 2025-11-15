@@ -61,7 +61,7 @@ export default function GroupChatPage() {
         // Check membership
         try {
           const { members } = await groupService.getMembers(groupId);
-          const isUserMember = members.some((m) => m.user_id === currentUserId);
+          const isUserMember = members.some((m) => m.keycloak_id === currentUserId);
           setIsMember(isUserMember);
 
           if (!isUserMember) {

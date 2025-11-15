@@ -44,7 +44,7 @@ export default function GroupList({ eventId, onRefresh }: GroupListProps) {
           try {
             const membersData = await groupService.getMembers(group.id);
             membershipStatus[group.id] = membersData.members.some(
-              (member: GroupMember) => member.user_id === user.id
+              (member: GroupMember) => member.keycloak_id === user.id
             );
           } catch (error: any) {
             // 403 means we're not a member, which is fine

@@ -17,6 +17,7 @@ export interface Group {
 
 export interface GroupMember {
   user_id: string;
+  keycloak_id?: string;  // Add keycloak_id for membership checking
   joined_at: string;
   is_admin: boolean;
 }

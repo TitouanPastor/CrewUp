@@ -51,6 +51,7 @@ class GroupListResponse(BaseModel):
 class MemberResponse(BaseModel):
     """Group member response model."""
     user_id: UUID
+    keycloak_id: str | None = None  # Add keycloak_id for frontend matching
     joined_at: datetime
     is_admin: bool = False
     

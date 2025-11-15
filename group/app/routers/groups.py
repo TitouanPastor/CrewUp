@@ -335,11 +335,25 @@ async def list_members(
             detail="You must be a member to view the member list"
         )
     
-    members = db.query(GroupMember).filter(GroupMember.group_id == group_id).all()
+    # Get members with user info (JOIN with users table)
+    from app.db.models import User
+    members_with_users = db.query(GroupMember, User).join(
+        User, GroupMember.user_id == User.id
+    ).filter(GroupMember.group_id == group_id).all()
+    
+    # Build response with keycloak_id included
+    member_responses = []
+    for member, user_info in members_with_users:
+        member_responses.append(MemberResponse(
+            user_id=member.user_id,
+            keycloak_id=user_info.keycloak_id,
+            joined_at=member.joined_at,
+            is_admin=False
+        ))
     
     return MemberListResponse(
-        members=[MemberResponse.model_validate(m) for m in members],
-        total=len(members)
+        members=member_responses,
+        total=len(member_responses)
     )
 
 
