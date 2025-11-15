@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Calendar, MapPin, Users, ArrowLeft, Share2, UserPlus } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
@@ -6,26 +6,37 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
+import { groupService } from '@/services/groupService';
+import CreateGroupDialog from '@/components/CreateGroupDialog';
+import GroupList from '@/components/GroupList';
 import 'leaflet/dist/leaflet.css';
 
 export default function EventDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [showJoinModal, setShowJoinModal] = useState(false);
+  const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const [groupsRefreshKey, setGroupsRefreshKey] = useState(0);
+  const [groupsCount, setGroupsCount] = useState(0);
 
-  // Mock event data
+  useEffect(() => {
+    loadGroupsCount();
+  }, [id, groupsRefreshKey]);
+
+  const loadGroupsCount = async () => {
+    try {
+      const data = await groupService.listGroups(id!);
+      setGroupsCount(data.total);
+    } catch (error) {
+      console.error('Failed to load groups count:', error);
+    }
+  };
+
+  // Mock event data - using UUID from mock events
   const event = {
-    id: Number(id),
+    id: id || 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
     name: 'Friday Night at Bishops Arms',
     description: 'Join us for an amazing Friday night! Great music, drinks, and vibes. Perfect opportunity to meet new people and have fun. DJ starts at 10 PM. We have special student discounts and a great atmosphere. Don\'t miss out on the best party of the week!',
     event_type: 'bar',
@@ -72,16 +83,12 @@ export default function EventDetailPage() {
     }
   };
 
-  const handleJoinGroup = (type: 'create' | 'browse') => {
-    setShowJoinModal(false);
-    toast({
-      title: type === 'create' ? "Group created!" : "Joined group!",
-      description: `You've ${type === 'create' ? 'created a new' : 'joined an existing'} group for this event`,
-    });
+  const handleGroupCreated = () => {
+    setGroupsRefreshKey((prev) => prev + 1);
   };
 
   return (
-    <div className="min-h-[calc(100dvh-8rem)] md:min-h-[calc(100dvh-4rem)]">
+    <div>
       <div className="max-w-5xl mx-auto px-4 md:px-6 py-6 space-y-6">
         {/* Back Button */}
         <Button
@@ -129,63 +136,94 @@ export default function EventDetailPage() {
 
         <div className="grid md:grid-cols-3 gap-6">
           {/* Main Content */}
-          <div className="md:col-span-2 space-y-6">
-            {/* Description */}
-            <Card>
-              <CardHeader>
-                <CardTitle>About this event</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground leading-relaxed">
-                  {event.description}
-                </p>
-              </CardContent>
-            </Card>
+          <div className="md:col-span-2">
+            <Tabs defaultValue="about" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="about">About</TabsTrigger>
+                <TabsTrigger value="groups">Groups ({groupsCount})</TabsTrigger>
+              </TabsList>
 
-            {/* Map */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Location</CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="h-[300px] rounded-b-lg overflow-hidden">
-                  <MapContainer
-                    center={[event.latitude, event.longitude]}
-                    zoom={15}
-                    className="h-full w-full"
-                    style={{ zIndex: 0 }}
-                  >
-                    <TileLayer
-                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    />
-                    <Marker position={[event.latitude, event.longitude]}>
-                      <Popup>
-                        <div className="p-2">
-                          <p className="font-semibold">{event.name}</p>
-                          <p className="text-sm text-muted-foreground">{event.address}</p>
-                        </div>
-                      </Popup>
-                    </Marker>
-                  </MapContainer>
-                </div>
-                <div className="p-6 pt-4">
-                  <div className="flex items-start gap-3">
-                    <MapPin className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-medium">{event.address}</p>
-                      <Button
-                        variant="link"
-                        className="h-auto p-0 text-primary"
-                        onClick={() => window.open(`https://maps.google.com/?q=${event.latitude},${event.longitude}`, '_blank')}
+              <TabsContent value="about" className="space-y-6 mt-6">
+                {/* Description */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>About this event</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground leading-relaxed">
+                      {event.description}
+                    </p>
+                  </CardContent>
+                </Card>
+
+                {/* Map */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Location</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <div className="h-[300px] rounded-b-lg overflow-hidden">
+                      <MapContainer
+                        center={[event.latitude, event.longitude]}
+                        zoom={15}
+                        className="h-full w-full"
+                        style={{ zIndex: 0 }}
                       >
-                        Open in Google Maps →
-                      </Button>
+                        <TileLayer
+                          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        />
+                        <Marker position={[event.latitude, event.longitude]}>
+                          <Popup>
+                            <div className="p-2">
+                              <p className="font-semibold">{event.name}</p>
+                              <p className="text-sm text-muted-foreground">{event.address}</p>
+                            </div>
+                          </Popup>
+                        </Marker>
+                      </MapContainer>
                     </div>
+                    <div className="p-6 pt-4">
+                      <div className="flex items-start gap-3">
+                        <MapPin className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-medium">{event.address}</p>
+                          <Button
+                            variant="link"
+                            className="h-auto p-0 text-primary"
+                            onClick={() =>
+                              window.open(
+                                `https://maps.google.com/?q=${event.latitude},${event.longitude}`,
+                                '_blank'
+                              )
+                            }
+                          >
+                            Open in Google Maps →
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="groups" className="space-y-4 mt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-lg font-semibold">Event Groups</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Join or create a group to meet people
+                    </p>
                   </div>
+                  <Button onClick={() => setShowCreateGroup(true)}>
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Create Group
+                  </Button>
                 </div>
-              </CardContent>
-            </Card>
+
+                <GroupList eventId={id!} onRefresh={groupsRefreshKey} />
+              </TabsContent>
+            </Tabs>
           </div>
 
           {/* Sidebar */}
@@ -210,56 +248,11 @@ export default function EventDetailPage() {
 
                 <Separator />
 
-                {/* Action Buttons */}
-                <div className="space-y-2">
-                  <Dialog open={showJoinModal} onOpenChange={setShowJoinModal}>
-                    <DialogTrigger asChild>
-                      <Button className="w-full" size="lg">
-                        <UserPlus className="w-4 h-4 mr-2" />
-                        Join Event
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Join {event.name}</DialogTitle>
-                        <DialogDescription>
-                          Choose how you want to participate in this event
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-3 mt-4">
-                        <Button 
-                          variant="default" 
-                          className="w-full justify-start h-auto py-4"
-                          onClick={() => handleJoinGroup('create')}
-                        >
-                          <div className="text-left">
-                            <div className="font-semibold mb-1">Create New Group</div>
-                            <div className="text-xs text-muted-foreground font-normal">
-                              Start your own group and invite friends
-                            </div>
-                          </div>
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          className="w-full justify-start h-auto py-4"
-                          onClick={() => handleJoinGroup('browse')}
-                        >
-                          <div className="text-left">
-                            <div className="font-semibold mb-1">Join Existing Group</div>
-                            <div className="text-xs text-muted-foreground font-normal">
-                              Browse {event.groups_count} groups looking for members
-                            </div>
-                          </div>
-                        </Button>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-
-                  <Button variant="outline" className="w-full" onClick={handleShare}>
-                    <Share2 className="w-4 h-4 mr-2" />
-                    Share Event
-                  </Button>
-                </div>
+                {/* Action Button */}
+                <Button variant="outline" className="w-full" onClick={handleShare}>
+                  <Share2 className="w-4 h-4 mr-2" />
+                  Share Event
+                </Button>
               </CardContent>
             </Card>
 
@@ -292,6 +285,14 @@ export default function EventDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Create Group Dialog */}
+      <CreateGroupDialog
+        eventId={id!}
+        open={showCreateGroup}
+        onOpenChange={setShowCreateGroup}
+        onGroupCreated={handleGroupCreated}
+      />
     </div>
   );
 }
