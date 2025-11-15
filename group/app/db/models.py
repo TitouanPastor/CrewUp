@@ -1,12 +1,33 @@
 """
 SQLAlchemy ORM models for Group & Chat Service.
 """
-from sqlalchemy import Column, String, Integer, Boolean, Text, DateTime, UUID, ForeignKey, CheckConstraint, Index
+from sqlalchemy import Column, String, Integer, Boolean, Text, DateTime, UUID, ForeignKey, CheckConstraint, Index, ARRAY, DECIMAL
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 import uuid
 
 from app.db.database import Base
+
+
+class User(Base):
+    """
+    User model (read-only reference to users table).
+    This service doesn't manage users, but needs to reference them.
+    """
+    __tablename__ = "users"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    keycloak_id = Column(String(255), unique=True, nullable=False, index=True)
+    email = Column(String(255), unique=True, nullable=False)
+    first_name = Column(String(100), nullable=False)
+    last_name = Column(String(100), nullable=False)
+    bio = Column(Text, nullable=True)
+    profile_picture_url = Column(Text, nullable=True)
+    interests = Column(ARRAY(Text), default=list)
+    reputation = Column(DECIMAL(3, 2), default=0.00)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=False), server_default=func.now())
+    updated_at = Column(DateTime(timezone=False), server_default=func.now(), onupdate=func.now())
 
 
 class Group(Base):
