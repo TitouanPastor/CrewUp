@@ -46,6 +46,15 @@ spec:
             name: group
             port:
               number: {{ .Values.services.group.port }}
+      
+      # Group WebSocket
+      - path: /api/v1/ws/groups
+        pathType: Prefix
+        backend:
+          service:
+            name: group
+            port:
+              number: {{ .Values.services.group.port }}
       {{- end }}
       
       {{- if .Values.services.rating.enabled }}
