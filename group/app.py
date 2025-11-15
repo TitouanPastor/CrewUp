@@ -1,11 +1,9 @@
-from fastapi import FastAPI
+"""
+Entry point for Group & Chat Service.
+Run with: uvicorn app.main:app --reload
+"""
+from app.main import app
 
-app = FastAPI()
-
-@app.get("/")
-async def root():
-    return {"service": "group", "status": "running"}
-
-@app.get("/health")
-async def health():
-    return {"status": "healthy"}
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8002)

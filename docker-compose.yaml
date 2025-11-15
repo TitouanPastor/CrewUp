@@ -9,7 +9,7 @@ services:
       POSTGRES_USER: crewup
       POSTGRES_PASSWORD: crewup_dev_password
     volumes:
-      - ./database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+      - ./helm/crewup/config/schema.sql:/docker-entrypoint-initdb.d/schema.sql
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
