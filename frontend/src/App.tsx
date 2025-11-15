@@ -35,7 +35,7 @@ function App() {
           <Route index element={<HomePage />} />
           <Route path="events" element={<EventsPage />} />
           <Route path="events/:id" element={<EventDetailPage />} />
-          <Route path="groups/:id" element={<GroupChatPage />} />
+          <Route path="groups/:id/chat" element={<GroupChatPage />} />
           <Route path="profile" element={<ProfilePage />} />
           {/* Catch-all route for 404 */}
           <Route path="*" element={<NotFoundPage />} />

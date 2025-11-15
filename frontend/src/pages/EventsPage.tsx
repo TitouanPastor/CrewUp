@@ -25,8 +25,8 @@ import {
 // Mock events avec plus de données
 const mockEvents: Event[] = [
   {
-    id: 1,
-    creator_id: 1,
+    id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+    creator_id: 'b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
     name: 'Friday Night at Bishops Arms',
     description: 'Weekly student party with special drinks and great music! Join us for an unforgettable night.',
     event_type: 'bar',
@@ -39,8 +39,8 @@ const mockEvents: Event[] = [
     groups_count: 4,
   },
   {
-    id: 2,
-    creator_id: 2,
+    id: 'a1eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+    creator_id: 'b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
     name: 'Live Music Night',
     description: 'Local bands playing all night long! Rock, indie, and electronic music.',
     event_type: 'concert',
@@ -53,8 +53,8 @@ const mockEvents: Event[] = [
     groups_count: 7,
   },
   {
-    id: 3,
-    creator_id: 1,
+    id: 'a2eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+    creator_id: 'b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
     name: 'Karaoke Night',
     description: 'Sing your heart out with friends! All genres welcome.',
     event_type: 'bar',
@@ -67,8 +67,8 @@ const mockEvents: Event[] = [
     groups_count: 2,
   },
   {
-    id: 4,
-    creator_id: 3,
+    id: 'a3eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+    creator_id: 'b2eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
     name: 'Tech Meetup & Networking',
     description: 'Connect with local developers and tech enthusiasts over drinks.',
     event_type: 'other',
@@ -81,8 +81,8 @@ const mockEvents: Event[] = [
     groups_count: 3,
   },
   {
-    id: 5,
-    creator_id: 2,
+    id: 'a4eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+    creator_id: 'b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
     name: 'Saturday Night Club',
     description: 'Dance the night away with the best DJs in town!',
     event_type: 'club',
@@ -138,10 +138,10 @@ export default function EventsPage() {
     });
 
   return (
-    <div className="min-h-[calc(100dvh-8rem)] md:min-h-[calc(100dvh-4rem)]">
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
+    <div>
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 space-y-6">
         {/* Header */}
-        <div className="mb-6">
+        <div>
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-2">
             Discover Events
           </h1>
@@ -151,7 +151,7 @@ export default function EventsPage() {
         </div>
 
         {/* Search and Filters */}
-        <div className="mb-6 space-y-4">
+        <div className="space-y-4">
           {/* Search Bar */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -252,7 +252,7 @@ export default function EventsPage() {
         </div>
 
         {/* Results Count */}
-        <div className="mb-4">
+        <div>
           <p className="text-sm text-muted-foreground">
             {filteredEvents.length} {filteredEvents.length === 1 ? 'event' : 'events'} found
           </p>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { userService, type User } from '../services/userService';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -14,8 +14,6 @@ import {
   X, 
   Star, 
   LogOut, 
-  Calendar, 
-  Users, 
   Award,
   Moon,
   Sun,
@@ -147,7 +145,7 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[calc(100dvh-8rem)]">
+      <div className="flex items-center justify-center py-20">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">Loading your profile...</p>
@@ -158,7 +156,7 @@ export default function ProfilePage() {
 
   if (!user) {
     return (
-      <div className="flex items-center justify-center min-h-[calc(100dvh-8rem)]">
+      <div className="flex items-center justify-center py-20">
         <Alert variant="destructive" className="max-w-md">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
@@ -184,8 +182,8 @@ export default function ProfilePage() {
   const avatarColor = `hsl(${(user.email.charCodeAt(0) * 137.5) % 360}, 70%, 50%)`;
 
   return (
-    <div className="min-h-[calc(100dvh-8rem)] md:min-h-[calc(100dvh-4rem)]">
-      <div className="max-w-5xl mx-auto px-4 md:px-6 py-6 space-y-6">
+    <div>
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 space-y-6">
         {/* Error Alert */}
         {error && !isEditing && (
           <Alert variant="destructive">
@@ -356,80 +354,10 @@ export default function ProfilePage() {
                 )}
               </CardContent>
             </Card>
-
-            {/* Recent Activity */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Activity</CardTitle>
-                <CardDescription>Your latest events and interactions</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {[
-                  {
-                    type: 'event',
-                    text: 'Attended Friday Night at Bishops Arms',
-                    time: '2 days ago',
-                    color: 'bg-primary'
-                  },
-                  {
-                    type: 'group',
-                    text: 'Joined Party Crew group',
-                    time: '5 days ago',
-                    color: 'bg-primary'
-                  },
-                  {
-                    type: 'rating',
-                    text: 'Received 5⭐ rating',
-                    time: '1 week ago',
-                    color: 'bg-yellow-500'
-                  }
-                ].map((activity, i) => (
-                  <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
-                    <div className={`w-2 h-2 ${activity.color} rounded-full mt-2 flex-shrink-0`}></div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium">{activity.text}</p>
-                      <p className="text-sm text-muted-foreground mt-0.5">{activity.time}</p>
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
           </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Stats */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Your Stats</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Calendar className="w-4 h-4" />
-                    <span className="text-sm">Events</span>
-                  </div>
-                  <Badge variant="secondary" className="text-base font-semibold">12</Badge>
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Users className="w-4 h-4" />
-                    <span className="text-sm">Groups</span>
-                  </div>
-                  <Badge variant="secondary" className="text-base font-semibold">5</Badge>
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Award className="w-4 h-4" />
-                    <span className="text-sm">Friends</span>
-                  </div>
-                  <Badge variant="secondary" className="text-base font-semibold">8</Badge>
-                </div>
-              </CardContent>
-            </Card>
-
             {/* Settings */}
             <Card>
               <CardHeader>

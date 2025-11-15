@@ -9,7 +9,7 @@ services:
       POSTGRES_USER: crewup
       POSTGRES_PASSWORD: crewup_dev_password
     volumes:
-      - ./database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+      - ./helm/crewup/config/schema.sql:/docker-entrypoint-initdb.d/schema.sql
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
@@ -41,6 +41,11 @@ services:
       context: ./group
       dockerfile: Dockerfile
     container_name: crewup-group
+    environment:
+      DATABASE_URL: postgresql://crewup:crewup_dev_password@crewup-db:5432/crewup
+      KEYCLOAK_SERVER_URL: https://keycloak.ltu-m7011e-3.se
+      KEYCLOAK_REALM: crewup
+      KEYCLOAK_CLIENT_ID: crewup-frontend
     ports:
       - "8002:8000"
     networks:
@@ -83,6 +88,11 @@ services:
       context: ./user
       dockerfile: Dockerfile
     container_name: crewup-user
+    environment:
+      DATABASE_URL: postgresql://crewup:crewup_dev_password@crewup-db:5432/crewup
+      KEYCLOAK_SERVER_URL: https://keycloak.ltu-m7011e-3.se
+      KEYCLOAK_REALM: crewup
+      KEYCLOAK_CLIENT_ID: crewup-frontend
     ports:
       - "8005:8000"
     networks:

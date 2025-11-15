@@ -17,11 +17,21 @@ class Config:
     @staticmethod
     def get_database_url() -> str:
         """
-        Get PostgreSQL connection URL from individual environment variables.
+        Get PostgreSQL connection URL from environment variables.
+        
+        Priority:
+        1. DATABASE_URL (full connection string)
+        2. Individual POSTGRES_* variables
         
         Local dev: postgresql://crewup:crewup_dev_password@localhost:5432/crewup
         K8s: postgresql://crewup:<secret>@postgres:5432/crewup
         """
+        # Check for full DATABASE_URL first (Docker Compose, some K8s configs)
+        database_url = os.getenv("DATABASE_URL")
+        if database_url:
+            return database_url
+        
+        # Fall back to individual variables (K8s secrets)
         user = os.getenv("POSTGRES_USER", "crewup")
         password = os.getenv("POSTGRES_PASSWORD", "crewup_dev_password")
         host = os.getenv("POSTGRES_HOST", "localhost")
