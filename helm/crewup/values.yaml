@@ -31,7 +31,7 @@ services:
     enabled: true  # Has basic health endpoints
     replicas: 1
     port: 8000
-    imageTag: "ad9a1b0"
+    imageTag: "a0464aa"
     
   rating:
     enabled: true  # Has basic health endpoints
@@ -56,7 +56,7 @@ frontend:
   enabled: true
   replicas: 1
   port: 80
-  imageTag: "1791dc8"
+  imageTag: "a0464aa"
   image: crewup-frontend  # Local built image name
 
 # Ingress Settings
