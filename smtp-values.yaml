@@ -1,0 +1,31 @@
+# SMTP Server Configuration
+smtp:
+  # SMTP server image (build your own at smtp-server/)
+  image: ghcr.io/titouanpastor/crewup-smtp:latest
+
+  # Number of replicas
+  replicas: 1
+
+  # SMTP server hostname
+  hostname: smtp.ltu-m7011e-3.se
+
+  # Domain for outgoing emails
+  domain: ltu-m7011e-3.se
+
+  # Relay host (optional - use if you want to relay through external SMTP like Gmail)
+  # Format: [smtp.gmail.com]:587 or leave empty for direct sending
+  relayhost: ""
+
+  # Relay authentication (only needed if using relayhost)
+  # Leave empty for direct sending
+  relayUsername: ""
+  relayPassword: ""
+
+  # Resource limits
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
