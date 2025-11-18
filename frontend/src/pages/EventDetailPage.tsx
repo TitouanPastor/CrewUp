@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Calendar, MapPin, Users, ArrowLeft, Share2, UserPlus } from 'lucide-react';
+import { Calendar, MapPin, Users, ArrowLeft, Share2, UserPlus, Heart } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,21 +9,51 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { groupService } from '@/services/groupService';
+import { eventService } from '@/services/eventService';
 import CreateGroupDialog from '@/components/CreateGroupDialog';
 import GroupList from '@/components/GroupList';
+import { Event } from '@/types';
 import 'leaflet/dist/leaflet.css';
 
 export default function EventDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [event, setEvent] = useState<Event | null>(null);
+  const [loading, setLoading] = useState(true);
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [groupsRefreshKey, setGroupsRefreshKey] = useState(0);
   const [groupsCount, setGroupsCount] = useState(0);
 
   useEffect(() => {
-    loadGroupsCount();
-  }, [id, groupsRefreshKey]);
+    if (id) {
+      loadEvent();
+      loadGroupsCount();
+    }
+  }, [id]);
+
+  useEffect(() => {
+    if (id) {
+      loadGroupsCount();
+    }
+  }, [groupsRefreshKey]);
+
+  const loadEvent = async () => {
+    try {
+      setLoading(true);
+      const data = await eventService.getEvent(id!);
+      setEvent(data);
+    } catch (error) {
+      console.error('Failed to load event:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load event details. Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadGroupsCount = async () => {
     try {
@@ -34,20 +64,41 @@ export default function EventDetailPage() {
     }
   };
 
-  // Mock event data - using UUID from mock events
-  const event = {
-    id: id || 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
-    name: 'Friday Night at Bishops Arms',
-    description: 'Join us for an amazing Friday night! Great music, drinks, and vibes. Perfect opportunity to meet new people and have fun. DJ starts at 10 PM. We have special student discounts and a great atmosphere. Don\'t miss out on the best party of the week!',
-    event_type: 'bar',
-    address: 'Storgatan 15, Luleå',
-    latitude: 65.584819,
-    longitude: 22.154984,
-    event_start: new Date(Date.now() + 3600000 * 5).toISOString(),
-    event_end: new Date(Date.now() + 3600000 * 10).toISOString(),
-    attendees_count: 23,
-    groups_count: 4,
+  const handleRSVP = async (status: 'going' | 'interested') => {
+    try {
+      await eventService.joinEvent(id!, status);
+      toast({
+        title: "Success",
+        description: `You are now marked as ${status}!`,
+      });
+      // Reload event to get updated counts and user status
+      loadEvent();
+    } catch (error) {
+      console.error('Failed to RSVP:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update your RSVP. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (!event) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
+        <h2 className="text-2xl font-bold">Event not found</h2>
+        <Button onClick={() => navigate('/events')}>Back to Events</Button>
+      </div>
+    );
+  }
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -125,11 +176,15 @@ export default function EventDetailPage() {
           <div className="flex items-center gap-6 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
               <Users className="w-4 h-4 text-primary" />
-              <span className="font-medium">{event.attendees_count} going</span>
+              <span className="font-medium">{event.participant_count} going</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Heart className="w-4 h-4 text-primary" />
+              <span className="font-medium">{event.interested_count} interested</span>
             </div>
             <div className="flex items-center gap-2">
               <UserPlus className="w-4 h-4 text-primary" />
-              <span className="font-medium">{event.groups_count} groups</span>
+              <span className="font-medium">{groupsCount} groups</span>
             </div>
           </div>
         </div>
@@ -157,54 +212,71 @@ export default function EventDetailPage() {
                 </Card>
 
                 {/* Map */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Location</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    <div className="h-[300px] rounded-b-lg overflow-hidden">
-                      <MapContainer
-                        center={[event.latitude, event.longitude]}
-                        zoom={15}
-                        className="h-full w-full"
-                        style={{ zIndex: 0 }}
-                      >
-                        <TileLayer
-                          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                        />
-                        <Marker position={[event.latitude, event.longitude]}>
-                          <Popup>
-                            <div className="p-2">
-                              <p className="font-semibold">{event.name}</p>
-                              <p className="text-sm text-muted-foreground">{event.address}</p>
-                            </div>
-                          </Popup>
-                        </Marker>
-                      </MapContainer>
-                    </div>
-                    <div className="p-6 pt-4">
-                      <div className="flex items-start gap-3">
-                        <MapPin className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                        <div>
-                          <p className="font-medium">{event.address}</p>
-                          <Button
-                            variant="link"
-                            className="h-auto p-0 text-primary"
-                            onClick={() =>
-                              window.open(
-                                `https://maps.google.com/?q=${event.latitude},${event.longitude}`,
-                                '_blank'
-                              )
-                            }
-                          >
-                            Open in Google Maps →
-                          </Button>
+                {event.latitude && event.longitude && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Location</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                      <div className="h-[300px] rounded-b-lg overflow-hidden">
+                        <MapContainer
+                          center={[Number(event.latitude), Number(event.longitude)]}
+                          zoom={15}
+                          className="h-full w-full"
+                          style={{ zIndex: 0 }}
+                        >
+                          <TileLayer
+                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                          />
+                          <Marker position={[Number(event.latitude), Number(event.longitude)]}>
+                            <Popup>
+                              <div className="p-2">
+                                <p className="font-semibold">{event.name}</p>
+                                <p className="text-sm text-muted-foreground">{event.address}</p>
+                              </div>
+                            </Popup>
+                          </Marker>
+                        </MapContainer>
+                      </div>
+                      <div className="p-6 pt-4">
+                        <div className="flex items-start gap-3">
+                          <MapPin className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                          <div>
+                            <p className="font-medium">{event.address}</p>
+                            <Button
+                              variant="link"
+                              className="h-auto p-0 text-primary"
+                              onClick={() =>
+                                window.open(
+                                  `https://maps.google.com/?q=${event.latitude},${event.longitude}`,
+                                  '_blank'
+                                )
+                              }
+                            >
+                              Open in Google Maps →
+                            </Button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Location without map */}
+                {(!event.latitude || !event.longitude) && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Location</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-start gap-3">
+                        <MapPin className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                        <p className="font-medium">{event.address}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </TabsContent>
 
               <TabsContent value="groups" className="space-y-4 mt-6">
@@ -240,7 +312,7 @@ export default function EventDetailPage() {
                     <div className="text-sm">
                       <p className="font-semibold mb-1">{formatDate(event.event_start)}</p>
                       <p className="text-muted-foreground">
-                        {formatTime(event.event_start)} - {formatTime(event.event_end)}
+                        {formatTime(event.event_start)}{event.event_end && ` - ${formatTime(event.event_end)}`}
                       </p>
                     </div>
                   </div>
@@ -248,7 +320,29 @@ export default function EventDetailPage() {
 
                 <Separator />
 
-                {/* Action Button */}
+                {/* RSVP Buttons */}
+                <div className="space-y-2">
+                  <Button
+                    className="w-full"
+                    onClick={() => handleRSVP('going')}
+                    variant={event.user_status === 'going' ? 'default' : 'outline'}
+                  >
+                    <Users className="w-4 h-4 mr-2" />
+                    {event.user_status === 'going' ? "You're Going" : "I'm Going"}
+                  </Button>
+                  <Button
+                    variant={event.user_status === 'interested' ? 'default' : 'outline'}
+                    className="w-full"
+                    onClick={() => handleRSVP('interested')}
+                  >
+                    <Heart className="w-4 h-4 mr-2" />
+                    {event.user_status === 'interested' ? "You're Interested" : "Interested"}
+                  </Button>
+                </div>
+
+                <Separator />
+
+                {/* Share Button */}
                 <Button variant="outline" className="w-full" onClick={handleShare}>
                   <Share2 className="w-4 h-4 mr-2" />
                   Share Event
@@ -262,24 +356,34 @@ export default function EventDetailPage() {
                 <CardTitle>Who's Going</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="flex -space-x-2">
-                    {[1, 2, 3, 4].map((i) => (
-                      <div
-                        key={i}
-                        className="w-8 h-8 rounded-full bg-primary/10 border-2 border-background flex items-center justify-center text-xs font-medium"
-                      >
-                        {String.fromCharCode(65 + i)}
+                {event.participant_count > 0 ? (
+                  <>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="flex -space-x-2">
+                        {[...Array(Math.min(4, event.participant_count))].map((_, i) => (
+                          <div
+                            key={i}
+                            className="w-8 h-8 rounded-full bg-primary/10 border-2 border-background flex items-center justify-center text-xs font-medium"
+                          >
+                            {String.fromCharCode(65 + i)}
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                  <span className="text-sm text-muted-foreground">
-                    +{event.attendees_count - 4} others
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Join them and make new friends!
-                </p>
+                      {event.participant_count > 4 && (
+                        <span className="text-sm text-muted-foreground">
+                          +{event.participant_count - 4} others
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Join them and make new friends!
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Be the first to say you're going!
+                  </p>
+                )}
               </CardContent>
             </Card>
           </div>

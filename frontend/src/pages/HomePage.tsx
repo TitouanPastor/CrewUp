@@ -30,9 +30,13 @@ const mockEvents: Event[] = [
     latitude: 65.584819,
     longitude: 22.154984,
     event_start: new Date(Date.now() + 3600000 * 5).toISOString(),
+    is_public: true,
+    is_cancelled: false,
     created_at: new Date().toISOString(),
-    attendees_count: 23,
-    groups_count: 4,
+    updated_at: new Date().toISOString(),
+    participant_count: 23,
+    interested_count: 5,
+    is_full: false,
   },
   {
     id: 'a1eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
@@ -44,9 +48,13 @@ const mockEvents: Event[] = [
     latitude: 65.5842,
     longitude: 22.1567,
     event_start: new Date(Date.now() + 3600000 * 24).toISOString(),
+    is_public: true,
+    is_cancelled: false,
     created_at: new Date().toISOString(),
-    attendees_count: 45,
-    groups_count: 7,
+    updated_at: new Date().toISOString(),
+    participant_count: 45,
+    interested_count: 12,
+    is_full: false,
   },
   {
     id: 'a2eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
@@ -58,9 +66,13 @@ const mockEvents: Event[] = [
     latitude: 65.583,
     longitude: 22.153,
     event_start: new Date(Date.now() + 3600000 * 48).toISOString(),
+    is_public: true,
+    is_cancelled: false,
     created_at: new Date().toISOString(),
-    attendees_count: 12,
-    groups_count: 2,
+    updated_at: new Date().toISOString(),
+    participant_count: 12,
+    interested_count: 3,
+    is_full: false,
   },
 ];
 
@@ -149,7 +161,7 @@ export default function HomePage() {
 
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <Users className="w-4 h-4 text-primary" />
-                        <span>{event.attendees_count} going · {event.groups_count} groups</span>
+                        <span>{event.participant_count} going{event.interested_count > 0 && ` · ${event.interested_count} interested`}</span>
                       </div>
                     </div>
 
@@ -185,7 +197,7 @@ export default function HomePage() {
             {mockEvents.map((event) => (
               <Marker
                 key={event.id}
-                position={[event.latitude || 0, event.longitude || 0]}
+                position={[Number(event.latitude) || 0, Number(event.longitude) || 0]}
               >
                 <Popup>
                   <div className="p-2 min-w-[200px]">

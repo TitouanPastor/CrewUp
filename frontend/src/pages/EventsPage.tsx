@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, MapPin, Users, Search, SlidersHorizontal } from 'lucide-react';
 import { Event } from '../types';
@@ -21,94 +21,65 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-
-// Mock events avec plus de données
-const mockEvents: Event[] = [
-  {
-    id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
-    creator_id: 'b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
-    name: 'Friday Night at Bishops Arms',
-    description: 'Weekly student party with special drinks and great music! Join us for an unforgettable night.',
-    event_type: 'bar',
-    address: 'Storgatan 15, Luleå',
-    latitude: 65.584819,
-    longitude: 22.154984,
-    event_start: new Date(Date.now() + 3600000 * 5).toISOString(),
-    created_at: new Date().toISOString(),
-    attendees_count: 23,
-    groups_count: 4,
-  },
-  {
-    id: 'a1eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
-    creator_id: 'b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
-    name: 'Live Music Night',
-    description: 'Local bands playing all night long! Rock, indie, and electronic music.',
-    event_type: 'concert',
-    address: 'Kulturens Hus, Luleå',
-    latitude: 65.5842,
-    longitude: 22.1567,
-    event_start: new Date(Date.now() + 3600000 * 24).toISOString(),
-    created_at: new Date().toISOString(),
-    attendees_count: 45,
-    groups_count: 7,
-  },
-  {
-    id: 'a2eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
-    creator_id: 'b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
-    name: 'Karaoke Night',
-    description: 'Sing your heart out with friends! All genres welcome.',
-    event_type: 'bar',
-    address: 'Downtown Luleå',
-    latitude: 65.583,
-    longitude: 22.153,
-    event_start: new Date(Date.now() + 3600000 * 48).toISOString(),
-    created_at: new Date().toISOString(),
-    attendees_count: 12,
-    groups_count: 2,
-  },
-  {
-    id: 'a3eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
-    creator_id: 'b2eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
-    name: 'Tech Meetup & Networking',
-    description: 'Connect with local developers and tech enthusiasts over drinks.',
-    event_type: 'other',
-    address: 'LTU Campus, Luleå',
-    latitude: 65.617,
-    longitude: 22.142,
-    event_start: new Date(Date.now() + 3600000 * 72).toISOString(),
-    created_at: new Date().toISOString(),
-    attendees_count: 18,
-    groups_count: 3,
-  },
-  {
-    id: 'a4eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
-    creator_id: 'b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
-    name: 'Saturday Night Club',
-    description: 'Dance the night away with the best DJs in town!',
-    event_type: 'club',
-    address: 'City Center, Luleå',
-    latitude: 65.585,
-    longitude: 22.156,
-    event_start: new Date(Date.now() + 3600000 * 96).toISOString(),
-    created_at: new Date().toISOString(),
-    attendees_count: 67,
-    groups_count: 12,
-  },
-];
+import { eventService } from '@/services/eventService';
+import { useToast } from '@/hooks/use-toast';
+import CreateEventDialog from '@/components/CreateEventDialog';
+import { Plus } from 'lucide-react';
 
 const eventTypes = [
   { value: 'all', label: 'All Types' },
   { value: 'bar', label: 'Bar' },
   { value: 'club', label: 'Club' },
   { value: 'concert', label: 'Concert' },
+  { value: 'party', label: 'Party' },
+  { value: 'restaurant', label: 'Restaurant' },
+  { value: 'outdoor', label: 'Outdoor' },
+  { value: 'sports', label: 'Sports' },
   { value: 'other', label: 'Other' },
 ];
 
 export default function EventsPage() {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('all');
   const [sortBy, setSortBy] = useState('date');
+  const [showCreateEvent, setShowCreateEvent] = useState(false);
+
+  useEffect(() => {
+    loadEvents();
+  }, [selectedType]);
+
+  const loadEvents = async () => {
+    try {
+      setLoading(true);
+      const params: any = {
+        limit: 100,
+      };
+
+      if (selectedType !== 'all') {
+        params.event_type = selectedType;
+      }
+
+      const data = await eventService.listEvents(params);
+      setEvents(data.events);
+    } catch (error) {
+      console.error('Failed to load events:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load events. Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEventCreated = () => {
+    loadEvents();
+  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -121,18 +92,18 @@ export default function EventsPage() {
   };
 
   // Filter and sort events
-  const filteredEvents = mockEvents
+  const filteredEvents = events
     .filter((event) => {
       const matchesSearch = event.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           (event.description?.toLowerCase() || '').includes(searchQuery.toLowerCase());
-      const matchesType = selectedType === 'all' || event.event_type === selectedType;
-      return matchesSearch && matchesType;
+                           (event.description?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+                           (event.address?.toLowerCase() || '').includes(searchQuery.toLowerCase());
+      return matchesSearch;
     })
     .sort((a, b) => {
       if (sortBy === 'date') {
         return new Date(a.event_start).getTime() - new Date(b.event_start).getTime();
       } else if (sortBy === 'popular') {
-        return (b.attendees_count || 0) - (a.attendees_count || 0);
+        return (b.participant_count || 0) - (a.participant_count || 0);
       }
       return 0;
     });
@@ -141,13 +112,19 @@ export default function EventsPage() {
     <div>
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 space-y-6">
         {/* Header */}
-        <div>
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-2">
-            Discover Events
-          </h1>
-          <p className="text-muted-foreground">
-            Find and join events happening around you
-          </p>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-2">
+              Discover Events
+            </h1>
+            <p className="text-muted-foreground">
+              Find and join events happening around you
+            </p>
+          </div>
+          <Button onClick={() => setShowCreateEvent(true)} className="gap-2">
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">Create Event</span>
+          </Button>
         </div>
 
         {/* Search and Filters */}
@@ -258,9 +235,18 @@ export default function EventsPage() {
           </p>
         </div>
 
+        {/* Loading State */}
+        {loading && (
+          <div className="text-center py-16">
+            <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-sm text-muted-foreground">Loading events...</p>
+          </div>
+        )}
+
         {/* Events Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-          {filteredEvents.map((event) => (
+        {!loading && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+            {filteredEvents.map((event) => (
             <Card
               key={event.id}
               onClick={() => navigate(`/events/${event.id}`)}
@@ -290,7 +276,7 @@ export default function EventsPage() {
                   <div className="flex items-center gap-2.5">
                     <Users className="w-4 h-4 text-primary flex-shrink-0" />
                     <span className="text-muted-foreground">
-                      {event.attendees_count} going · {event.groups_count} groups
+                      {event.participant_count} going{event.interested_count > 0 && ` · ${event.interested_count} interested`}
                     </span>
                   </div>
                 </div>
@@ -309,11 +295,12 @@ export default function EventsPage() {
                 </div>
               </CardContent>
             </Card>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* Empty State */}
-        {filteredEvents.length === 0 && (
+        {!loading && filteredEvents.length === 0 && (
           <div className="text-center py-16">
             <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
               <Calendar className="w-8 h-8 text-muted-foreground" />
@@ -334,6 +321,13 @@ export default function EventsPage() {
           </div>
         )}
       </div>
+
+      {/* Create Event Dialog */}
+      <CreateEventDialog
+        open={showCreateEvent}
+        onOpenChange={setShowCreateEvent}
+        onEventCreated={handleEventCreated}
+      />
     </div>
   );
 }

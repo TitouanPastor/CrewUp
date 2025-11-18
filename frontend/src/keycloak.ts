@@ -4,7 +4,7 @@ import Keycloak from 'keycloak-js';
 const keycloakConfig = {
   url: 'https://keycloak.ltu-m7011e-3.se',
   realm: 'crewup',
-  clientId: 'crewup-test',
+  clientId: 'crewup-frontend',
 };
 
 // Initialize Keycloak instance

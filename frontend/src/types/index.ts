@@ -16,14 +16,37 @@ export interface Event {
   creator_id: string;  // UUID format
   name: string;
   description?: string;
-  event_type?: string;
+  event_type?: 'bar' | 'club' | 'concert' | 'party' | 'restaurant' | 'outdoor' | 'sports' | 'other';
   address: string;
-  latitude?: number;
-  longitude?: number;
+  latitude?: string | number;
+  longitude?: string | number;
   event_start: string;
+  event_end?: string;
+  max_attendees?: number | null;
+  is_public: boolean;
+  is_cancelled: boolean;
   created_at: string;
-  attendees_count?: number;
-  groups_count?: number;
+  updated_at: string;
+
+  // Creator details
+  creator_first_name?: string;
+  creator_last_name?: string;
+  creator_profile_picture?: string;
+
+  // Computed fields
+  participant_count: number;
+  interested_count: number;
+  is_full: boolean;
+  user_status?: 'going' | 'interested' | 'not_going' | null;
+}
+
+export interface EventAttendee {
+  user_id: string;  // UUID
+  keycloak_id?: string;
+  first_name?: string;
+  last_name?: string;
+  status: 'going' | 'interested' | 'not_going';
+  joined_at: string;
 }
 
 export interface Group {
@@ -78,9 +101,5 @@ export interface SafetyAlert {
 }
 
 export interface EventRSVP {
-  id: number;
-  event_id: number;
-  user_id: number;
   status: 'going' | 'interested' | 'not_going';
-  created_at: string;
 }

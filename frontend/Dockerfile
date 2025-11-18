@@ -4,7 +4,7 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Build arguments for environment variables
-ARG VITE_API_URL=https://crewup.ltu-m7011e-3.se/api/v1
+ARG VITE_API_URL=http://crewup.ltu-m7011e-3.se/api/v1
 ARG VITE_KEYCLOAK_URL=https://keycloak.ltu-m7011e-3.se
 ARG VITE_KEYCLOAK_REALM=crewup
 ARG VITE_KEYCLOAK_CLIENT_ID=crewup-frontend
