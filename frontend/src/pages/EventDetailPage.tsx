@@ -1,15 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Calendar, MapPin, Users, ArrowLeft, Share2, UserPlus, Heart } from 'lucide-react';
+import { Calendar, MapPin, Users, ArrowLeft, Share2, UserPlus, Heart, Edit, XCircle, Save } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { groupService } from '@/services/groupService';
 import { eventService } from '@/services/eventService';
+import { userService } from '@/services/userService';
 import CreateGroupDialog from '@/components/CreateGroupDialog';
 import GroupList from '@/components/GroupList';
 import { Event } from '@/types';
@@ -24,11 +29,27 @@ export default function EventDetailPage() {
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [groupsRefreshKey, setGroupsRefreshKey] = useState(0);
   const [groupsCount, setGroupsCount] = useState(0);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    description: '',
+    event_type: 'other',
+    address: '',
+    latitude: '',
+    longitude: '',
+    event_start: '',
+    event_end: '',
+    max_attendees: '',
+  });
 
   useEffect(() => {
     if (id) {
       loadEvent();
       loadGroupsCount();
+      loadCurrentUser();
     }
   }, [id]);
 
@@ -37,6 +58,33 @@ export default function EventDetailPage() {
       loadGroupsCount();
     }
   }, [groupsRefreshKey]);
+
+  // Initialize edit form when entering edit mode
+  useEffect(() => {
+    if (isEditMode && event) {
+      const formatDateForInput = (dateString: string) => {
+        const date = new Date(dateString);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+      };
+
+      setEditForm({
+        name: event.name,
+        description: event.description || '',
+        event_type: event.event_type || 'other',
+        address: event.address,
+        latitude: event.latitude?.toString() || '',
+        longitude: event.longitude?.toString() || '',
+        event_start: formatDateForInput(event.event_start),
+        event_end: event.event_end ? formatDateForInput(event.event_end) : '',
+        max_attendees: event.max_attendees?.toString() || '',
+      });
+    }
+  }, [isEditMode, event]);
 
   const loadEvent = async () => {
     try {
@@ -64,6 +112,15 @@ export default function EventDetailPage() {
     }
   };
 
+  const loadCurrentUser = async () => {
+    try {
+      const user = await userService.getMe();
+      setCurrentUserId(user.id);
+    } catch (error) {
+      console.error('Failed to load current user:', error);
+    }
+  };
+
   const handleRSVP = async (status: 'going' | 'interested') => {
     try {
       await eventService.joinEvent(id!, status);
@@ -82,6 +139,133 @@ export default function EventDetailPage() {
       });
     }
   };
+
+  const handleCancelEvent = async () => {
+    if (!window.confirm('Are you sure you want to cancel this event? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      setIsCancelling(true);
+      await eventService.updateEvent(id!, { is_cancelled: true });
+      toast({
+        title: "Event Cancelled",
+        description: "This event has been marked as cancelled.",
+      });
+      // Reload event to show updated status
+      await loadEvent();
+      setIsEditMode(false);
+    } catch (error) {
+      console.error('Failed to cancel event:', error);
+      toast({
+        title: "Error",
+        description: "Failed to cancel event. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  const handleSaveChanges = async () => {
+    if (!event) return;
+
+    // Validation
+    if (!editForm.name.trim()) {
+      toast({
+        title: 'Name required',
+        description: 'Please enter an event name',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!editForm.address.trim()) {
+      toast({
+        title: 'Address required',
+        description: 'Please enter an event address',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!editForm.event_start) {
+      toast({
+        title: 'Start time required',
+        description: 'Please select an event start time',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!editForm.event_end) {
+      toast({
+        title: 'End time required',
+        description: 'Please select an event end time',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate end time is after start time
+    if (new Date(editForm.event_end) <= new Date(editForm.event_start)) {
+      toast({
+        title: 'Invalid time range',
+        description: 'End time must be after start time',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate latitude/longitude pair
+    if ((editForm.latitude && !editForm.longitude) || (!editForm.latitude && editForm.longitude)) {
+      toast({
+        title: 'Invalid coordinates',
+        description: 'Both latitude and longitude must be provided together',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      await eventService.updateEvent(id!, {
+        name: editForm.name.trim(),
+        description: editForm.description.trim() || undefined,
+        event_type: editForm.event_type as any,
+        address: editForm.address.trim(),
+        latitude: editForm.latitude ? parseFloat(editForm.latitude) : undefined,
+        longitude: editForm.longitude ? parseFloat(editForm.longitude) : undefined,
+        event_start: new Date(editForm.event_start).toISOString(),
+        event_end: new Date(editForm.event_end).toISOString(),
+        max_attendees: editForm.max_attendees ? parseInt(editForm.max_attendees) : null,
+      });
+
+      toast({
+        title: "Changes Saved",
+        description: "Event has been updated successfully.",
+      });
+
+      // Reload event to show updated data
+      await loadEvent();
+      setIsEditMode(false);
+    } catch (error: any) {
+      console.error('Failed to update event:', error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.detail || "Failed to update event. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleGroupCreated = () => {
+    setGroupsRefreshKey((prev) => prev + 1);
+  };
+
+  const isCreator = currentUserId && event && currentUserId === event.creator_id;
 
   if (loading) {
     return (
@@ -102,9 +286,9 @@ export default function EventDetailPage() {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
+    return date.toLocaleDateString('en-US', {
       weekday: 'long',
-      month: 'long', 
+      month: 'long',
       day: 'numeric',
       year: 'numeric'
     });
@@ -112,7 +296,7 @@ export default function EventDetailPage() {
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleTimeString('en-US', { 
+    return date.toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit'
     });
@@ -134,17 +318,13 @@ export default function EventDetailPage() {
     }
   };
 
-  const handleGroupCreated = () => {
-    setGroupsRefreshKey((prev) => prev + 1);
-  };
-
   return (
     <div>
       <div className="max-w-5xl mx-auto px-4 md:px-6 py-6 space-y-6">
         {/* Back Button */}
         <Button
           variant="ghost"
-          onClick={() => navigate(-1)}
+          onClick={() => navigate('/events')}
           className="gap-2 -ml-2"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -155,21 +335,40 @@ export default function EventDetailPage() {
         <div className="space-y-4">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 space-y-3">
-              <Badge variant="secondary" className="capitalize text-sm">
-                {event.event_type}
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="capitalize text-sm">
+                  {event.event_type}
+                </Badge>
+                {event.is_cancelled && (
+                  <Badge variant="destructive" className="text-sm">
+                    Cancelled
+                  </Badge>
+                )}
+              </div>
               <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
                 {event.name}
               </h1>
             </div>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handleShare}
-              className="flex-shrink-0"
-            >
-              <Share2 className="w-4 h-4" />
-            </Button>
+            <div className="flex gap-2">
+              {isCreator && !event.is_cancelled && (
+                <Button
+                  variant={isEditMode ? "default" : "outline"}
+                  size="icon"
+                  onClick={() => setIsEditMode(!isEditMode)}
+                  className="flex-shrink-0"
+                >
+                  <Edit className="w-4 h-4" />
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleShare}
+                className="flex-shrink-0"
+              >
+                <Share2 className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
 
           {/* Quick Stats */}
@@ -199,17 +398,160 @@ export default function EventDetailPage() {
               </TabsList>
 
               <TabsContent value="about" className="space-y-6 mt-6">
+                {/* Edit Form */}
+                {isEditMode && isCreator && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Edit Event Details</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="col-span-2 space-y-2">
+                          <Label htmlFor="edit-name">Event Name *</Label>
+                          <Input
+                            id="edit-name"
+                            value={editForm.name}
+                            onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                            maxLength={255}
+                          />
+                        </div>
+
+                        <div className="col-span-2 space-y-2">
+                          <Label htmlFor="edit-description">Description</Label>
+                          <Textarea
+                            id="edit-description"
+                            value={editForm.description}
+                            onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                            rows={3}
+                          />
+                        </div>
+
+                        <div className="col-span-2 space-y-2">
+                          <Label htmlFor="edit-event-type">Event Type</Label>
+                          <Select
+                            value={editForm.event_type}
+                            onValueChange={(value) => setEditForm({ ...editForm, event_type: value })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="bar">Bar</SelectItem>
+                              <SelectItem value="club">Club</SelectItem>
+                              <SelectItem value="concert">Concert</SelectItem>
+                              <SelectItem value="party">Party</SelectItem>
+                              <SelectItem value="restaurant">Restaurant</SelectItem>
+                              <SelectItem value="outdoor">Outdoor</SelectItem>
+                              <SelectItem value="sports">Sports</SelectItem>
+                              <SelectItem value="other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="col-span-2 space-y-2">
+                          <Label htmlFor="edit-address">Address *</Label>
+                          <Input
+                            id="edit-address"
+                            value={editForm.address}
+                            onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="edit-latitude">Latitude (optional)</Label>
+                          <Input
+                            id="edit-latitude"
+                            type="number"
+                            step="any"
+                            placeholder="e.g., 65.584819"
+                            value={editForm.latitude}
+                            onChange={(e) => setEditForm({ ...editForm, latitude: e.target.value })}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="edit-longitude">Longitude (optional)</Label>
+                          <Input
+                            id="edit-longitude"
+                            type="number"
+                            step="any"
+                            placeholder="e.g., 22.154984"
+                            value={editForm.longitude}
+                            onChange={(e) => setEditForm({ ...editForm, longitude: e.target.value })}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="edit-start">Start Time *</Label>
+                          <Input
+                            id="edit-start"
+                            type="datetime-local"
+                            value={editForm.event_start}
+                            onChange={(e) => setEditForm({ ...editForm, event_start: e.target.value })}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="edit-end">End Time *</Label>
+                          <Input
+                            id="edit-end"
+                            type="datetime-local"
+                            value={editForm.event_end}
+                            min={editForm.event_start}
+                            onChange={(e) => setEditForm({ ...editForm, event_end: e.target.value })}
+                          />
+                        </div>
+
+                        <div className="col-span-2 space-y-2">
+                          <Label htmlFor="edit-max-attendees">Max Attendees (optional)</Label>
+                          <Input
+                            id="edit-max-attendees"
+                            type="number"
+                            min={2}
+                            placeholder="Leave empty for unlimited"
+                            value={editForm.max_attendees}
+                            onChange={(e) => setEditForm({ ...editForm, max_attendees: e.target.value })}
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Leave empty for unlimited attendees
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={handleSaveChanges}
+                          disabled={isSaving}
+                          className="flex-1"
+                        >
+                          <Save className="w-4 h-4 mr-2" />
+                          {isSaving ? "Saving..." : "Save Changes"}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => setIsEditMode(false)}
+                          disabled={isSaving}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
                 {/* Description */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>About this event</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground leading-relaxed">
-                      {event.description}
-                    </p>
-                  </CardContent>
-                </Card>
+                {!isEditMode && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>About this event</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-muted-foreground leading-relaxed">
+                        {event.description}
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
 
                 {/* Map */}
                 {event.latitude && event.longitude && (
@@ -320,25 +662,45 @@ export default function EventDetailPage() {
 
                 <Separator />
 
+                {/* Edit Mode - Cancel Event Button */}
+                {isEditMode && isCreator && !event.is_cancelled && (
+                  <>
+                    <div className="space-y-2">
+                      <Button
+                        variant="destructive"
+                        className="w-full"
+                        onClick={handleCancelEvent}
+                        disabled={isCancelling}
+                      >
+                        <XCircle className="w-4 h-4 mr-2" />
+                        {isCancelling ? "Cancelling..." : "Cancel Event"}
+                      </Button>
+                    </div>
+                    <Separator />
+                  </>
+                )}
+
                 {/* RSVP Buttons */}
-                <div className="space-y-2">
-                  <Button
-                    className="w-full"
-                    onClick={() => handleRSVP('going')}
-                    variant={event.user_status === 'going' ? 'default' : 'outline'}
-                  >
-                    <Users className="w-4 h-4 mr-2" />
-                    {event.user_status === 'going' ? "You're Going" : "I'm Going"}
-                  </Button>
-                  <Button
-                    variant={event.user_status === 'interested' ? 'default' : 'outline'}
-                    className="w-full"
-                    onClick={() => handleRSVP('interested')}
-                  >
-                    <Heart className="w-4 h-4 mr-2" />
-                    {event.user_status === 'interested' ? "You're Interested" : "Interested"}
-                  </Button>
-                </div>
+                {!event.is_cancelled && (
+                  <div className="space-y-2">
+                    <Button
+                      className="w-full"
+                      onClick={() => handleRSVP('going')}
+                      variant={event.user_status === 'going' ? 'default' : 'outline'}
+                    >
+                      <Users className="w-4 h-4 mr-2" />
+                      {event.user_status === 'going' ? "You're Going" : "I'm Going"}
+                    </Button>
+                    <Button
+                      variant={event.user_status === 'interested' ? 'default' : 'outline'}
+                      className="w-full"
+                      onClick={() => handleRSVP('interested')}
+                    >
+                      <Heart className="w-4 h-4 mr-2" />
+                      {event.user_status === 'interested' ? "You're Interested" : "Interested"}
+                    </Button>
+                  </div>
+                )}
 
                 <Separator />
 
@@ -347,43 +709,6 @@ export default function EventDetailPage() {
                   <Share2 className="w-4 h-4 mr-2" />
                   Share Event
                 </Button>
-              </CardContent>
-            </Card>
-
-            {/* Attendees Preview */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Who's Going</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {event.participant_count > 0 ? (
-                  <>
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="flex -space-x-2">
-                        {[...Array(Math.min(4, event.participant_count))].map((_, i) => (
-                          <div
-                            key={i}
-                            className="w-8 h-8 rounded-full bg-primary/10 border-2 border-background flex items-center justify-center text-xs font-medium"
-                          >
-                            {String.fromCharCode(65 + i)}
-                          </div>
-                        ))}
-                      </div>
-                      {event.participant_count > 4 && (
-                        <span className="text-sm text-muted-foreground">
-                          +{event.participant_count - 4} others
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Join them and make new friends!
-                    </p>
-                  </>
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    Be the first to say you're going!
-                  </p>
-                )}
               </CardContent>
             </Card>
           </div>
