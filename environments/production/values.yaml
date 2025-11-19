@@ -22,7 +22,8 @@ postgres:
   version: "15"
   database: crewup
   user: crewup
-  password: "crewup_production_password_CHANGE_ME"
+  password: "crewup_production_password_CHANGE_ME"  # Not used when externalSecret=true
+  externalSecret: true  # Secret managed manually outside of Helm/ArgoCD
   storage: 20Gi  # Production storage
 
 # API Services - High Availability
