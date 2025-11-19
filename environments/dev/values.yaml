@@ -62,7 +62,7 @@ frontend:
   enabled: true
   replicas: 1
   port: 80
-  imageTag: "latest"  # Auto-updated by CI/CD
+  imageTag: "3c91201"
   image: crewup-frontend
 
 # Ingress Settings
