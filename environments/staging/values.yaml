@@ -22,7 +22,7 @@ postgres:
   version: "15"
   database: crewup
   user: crewup
-  password: ""
+  password: "crewup_staging_password"
   storage: 10Gi  # More storage for staging
 
 # API Services

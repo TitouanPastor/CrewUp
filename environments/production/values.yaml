@@ -22,7 +22,7 @@ postgres:
   version: "15"
   database: crewup
   user: crewup
-  password: ""
+  password: "crewup_production_password_CHANGE_ME"
   storage: 20Gi  # Production storage
 
 # API Services - High Availability
