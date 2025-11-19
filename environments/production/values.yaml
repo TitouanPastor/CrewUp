@@ -31,38 +31,38 @@ services:
     enabled: true
     replicas: 3  # HA for production
     port: 8000
-    imageTag: "latest"  # Manually promoted from staging
+    imageTag: "latest"
     
   group:
     enabled: true
     replicas: 3
     port: 8000
-    imageTag: "c76508c"  # Current production version
+    imageTag: "latest"
     
   rating:
     enabled: true
     replicas: 2
     port: 8000
-    imageTag: "6845455"  # Current production version
+    imageTag: "latest"
     
   safety:
     enabled: true
     replicas: 2
     port: 8000
-    imageTag: "latest"  # Manually promoted from staging
+    imageTag: "latest"
     
   user:
     enabled: true
     replicas: 3
     port: 8000
-    imageTag: "304ccc1"  # Current production version
+    imageTag: "latest"
 
 # Frontend - High Availability
 frontend:
   enabled: true
   replicas: 3
   port: 80
-  imageTag: "a0464aa"  # Current production version
+  imageTag: "3c91201"
   image: crewup-frontend
 
 # Ingress Settings
