@@ -108,15 +108,14 @@ jobs:
           else
             git pull --rebase --autostash origin main
             
-            git commit -m "chore(${{ github.event.inputs.target_env }}): promote from ${{ github.event.inputs.source_env }} [skip ci]
-
-Promoted images:
-- Frontend: $FRONTEND_TAG
-- Event: $EVENT_TAG
-- Group: $GROUP_TAG
-- Rating: $RATING_TAG
-- Safety: $SAFETY_TAG
-- User: $USER_TAG"
+            git commit -m "chore(${{ github.event.inputs.target_env }}): promote from ${{ github.event.inputs.source_env }} [skip ci]" \
+              -m "Promoted images:" \
+              -m "- Frontend: ${{ env.FRONTEND_TAG }}" \
+              -m "- Event: ${{ env.EVENT_TAG }}" \
+              -m "- Group: ${{ env.GROUP_TAG }}" \
+              -m "- Rating: ${{ env.RATING_TAG }}" \
+              -m "- Safety: ${{ env.SAFETY_TAG }}" \
+              -m "- User: ${{ env.USER_TAG }}"
             
             git push origin main
             
@@ -126,6 +125,14 @@ Promoted images:
       
       - name: Deployment summary
         run: |
+          # Re-extract tags for summary
+          FRONTEND_TAG=$(grep 'imageTag:' environments/${{ github.event.inputs.source_env }}/values.yaml | grep -A 5 'frontend:' | grep 'imageTag:' | awk '{print $2}' | tr -d '"')
+          EVENT_TAG=$(grep 'imageTag:' environments/${{ github.event.inputs.source_env }}/values.yaml | grep -A 5 'event:' | grep 'imageTag:' | head -1 | awk '{print $2}' | tr -d '"')
+          GROUP_TAG=$(grep 'imageTag:' environments/${{ github.event.inputs.source_env }}/values.yaml | grep -A 5 'group:' | grep 'imageTag:' | head -1 | awk '{print $2}' | tr -d '"')
+          RATING_TAG=$(grep 'imageTag:' environments/${{ github.event.inputs.source_env }}/values.yaml | grep -A 5 'rating:' | grep 'imageTag:' | head -1 | awk '{print $2}' | tr -d '"')
+          SAFETY_TAG=$(grep 'imageTag:' environments/${{ github.event.inputs.source_env }}/values.yaml | grep -A 5 'safety:' | grep 'imageTag:' | head -1 | awk '{print $2}' | tr -d '"')
+          USER_TAG=$(grep 'imageTag:' environments/${{ github.event.inputs.source_env }}/values.yaml | grep -A 5 'user:' | grep 'imageTag:' | head -1 | awk '{print $2}' | tr -d '"')
+          
           echo "## 🎉 Promotion Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Source:** \`${{ github.event.inputs.source_env }}\`" >> $GITHUB_STEP_SUMMARY
@@ -146,10 +153,10 @@ Promoted images:
           echo "" >> $GITHUB_STEP_SUMMARY
           
           if [[ "${{ github.event.inputs.target_env }}" == "staging" ]]; then
-            echo "1. ✅ Monitor ArgoCD sync for \`crewup-staging\`" >> $GITHUB_STEP_SUMMARY
-            echo "2. 🧪 Test on https://crewup-staging.ltu-m7011e-3.se" >> $GITHUB_STEP_SUMMARY
-            echo "3. 🚀 When validated, promote to production" >> $GITHUB_STEP_SUMMARY
+            echo "1. Monitor ArgoCD sync for crewup-staging" >> $GITHUB_STEP_SUMMARY
+            echo "2. Test on https://crewup-staging.ltu-m7011e-3.se" >> $GITHUB_STEP_SUMMARY
+            echo "3. When validated, promote to production" >> $GITHUB_STEP_SUMMARY
           else
-            echo "1. ✅ Monitor ArgoCD sync for \`crewup-production\`" >> $GITHUB_STEP_SUMMARY
-            echo "2. 🎉 Live on https://crewup.ltu-m7011e-3.se" >> $GITHUB_STEP_SUMMARY
+            echo "1. Monitor ArgoCD sync for crewup-production" >> $GITHUB_STEP_SUMMARY
+            echo "2. Live on https://crewup.ltu-m7011e-3.se" >> $GITHUB_STEP_SUMMARY
           fi
