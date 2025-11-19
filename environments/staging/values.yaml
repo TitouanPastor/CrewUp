@@ -10,6 +10,12 @@ imagePullPolicy: Always
 domain: crewup-staging.ltu-m7011e-3.se
 email: titpas-5@student.ltu.se
 
+# Keycloak configuration
+keycloak:
+  url: https://keycloak.ltu-m7011e-3.se
+  realm: crewup
+  clientId: crewup-staging
+
 # PostgreSQL Database
 postgres:
   enabled: true
