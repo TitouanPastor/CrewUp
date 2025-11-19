@@ -1,0 +1,66 @@
+# CrewUp Production Environment
+# Manually promoted from staging after validation
+
+# Global settings
+namespace: crewup-production
+imageRegistry: ghcr.io/titouanpastor
+imagePullPolicy: Always
+
+# Domain and SSL configuration
+domain: crewup.ltu-m7011e-3.se
+email: titpas-5@student.ltu.se
+
+# PostgreSQL Database
+postgres:
+  enabled: true
+  version: "15"
+  database: crewup
+  user: crewup
+  password: ""
+  storage: 20Gi  # Production storage
+
+# API Services - High Availability
+services:
+  event:
+    enabled: true
+    replicas: 3  # HA for production
+    port: 8000
+    imageTag: "latest"  # Manually promoted from staging
+    
+  group:
+    enabled: true
+    replicas: 3
+    port: 8000
+    imageTag: "c76508c"  # Current production version
+    
+  rating:
+    enabled: true
+    replicas: 2
+    port: 8000
+    imageTag: "6845455"  # Current production version
+    
+  safety:
+    enabled: true
+    replicas: 2
+    port: 8000
+    imageTag: "latest"  # Manually promoted from staging
+    
+  user:
+    enabled: true
+    replicas: 3
+    port: 8000
+    imageTag: "304ccc1"  # Current production version
+
+# Frontend - High Availability
+frontend:
+  enabled: true
+  replicas: 3
+  port: 80
+  imageTag: "a0464aa"  # Current production version
+  image: crewup-frontend
+
+# Ingress Settings
+ingress:
+  enabled: true
+  className: traefik
+  certIssuer: letsencrypt-prod  # Production certificates

@@ -1,0 +1,66 @@
+# CrewUp Development Environment
+# Auto-deployed on every push to main
+
+# Global settings
+namespace: crewup-dev
+imageRegistry: ghcr.io/titouanpastor
+imagePullPolicy: Always
+
+# Domain and SSL configuration
+domain: crewup-dev.ltu-m7011e-3.se
+email: titpas-5@student.ltu.se
+
+# PostgreSQL Database
+postgres:
+  enabled: true
+  version: "15"
+  database: crewup
+  user: crewup
+  password: ""
+  storage: 5Gi
+
+# API Services
+services:
+  event:
+    enabled: true
+    replicas: 1
+    port: 8000
+    imageTag: "latest"  # Auto-updated by CI/CD
+    
+  group:
+    enabled: true
+    replicas: 1
+    port: 8000
+    imageTag: "latest"  # Auto-updated by CI/CD
+    
+  rating:
+    enabled: true
+    replicas: 1
+    port: 8000
+    imageTag: "latest"  # Auto-updated by CI/CD
+    
+  safety:
+    enabled: true
+    replicas: 1
+    port: 8000
+    imageTag: "latest"  # Auto-updated by CI/CD
+    
+  user:
+    enabled: true
+    replicas: 1
+    port: 8000
+    imageTag: "latest"  # Auto-updated by CI/CD
+
+# Frontend
+frontend:
+  enabled: true
+  replicas: 1
+  port: 80
+  imageTag: "latest"  # Auto-updated by CI/CD
+  image: crewup-frontend
+
+# Ingress Settings
+ingress:
+  enabled: true
+  className: traefik
+  certIssuer: letsencrypt-staging  # Use staging for dev to avoid rate limits

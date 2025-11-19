@@ -1,0 +1,155 @@
+name: Promote to Environment
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_env:
+        description: 'Target environment for promotion'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+      source_env:
+        description: 'Source environment to promote from'
+        required: true
+        type: choice
+        default: 'dev'
+        options:
+          - dev
+          - staging
+
+permissions:
+  contents: write
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Validate promotion path
+        run: |
+          if [[ "${{ github.event.inputs.target_env }}" == "staging" && "${{ github.event.inputs.source_env }}" != "dev" ]]; then
+            echo "❌ Error: Staging can only be promoted from dev"
+            exit 1
+          fi
+          
+          if [[ "${{ github.event.inputs.target_env }}" == "production" && "${{ github.event.inputs.source_env }}" != "staging" ]]; then
+            echo "❌ Error: Production can only be promoted from staging"
+            exit 1
+          fi
+          
+          echo "✅ Valid promotion path: ${{ github.event.inputs.source_env }} → ${{ github.event.inputs.target_env }}"
+      
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+      
+      - name: Extract image tags from source environment
+        id: extract_tags
+        run: |
+          SOURCE_FILE="environments/${{ github.event.inputs.source_env }}/values.yaml"
+          
+          # Extract all image tags from source environment
+          FRONTEND_TAG=$(grep -A 5 "^frontend:" "$SOURCE_FILE" | grep "imageTag:" | sed 's/.*imageTag:[[:space:]]*"\(.*\)".*/\1/')
+          EVENT_TAG=$(grep -A 5 "^  event:" "$SOURCE_FILE" | grep "imageTag:" | sed 's/.*imageTag:[[:space:]]*"\(.*\)".*/\1/')
+          GROUP_TAG=$(grep -A 5 "^  group:" "$SOURCE_FILE" | grep "imageTag:" | sed 's/.*imageTag:[[:space:]]*"\(.*\)".*/\1/')
+          RATING_TAG=$(grep -A 5 "^  rating:" "$SOURCE_FILE" | grep "imageTag:" | sed 's/.*imageTag:[[:space:]]*"\(.*\)".*/\1/')
+          SAFETY_TAG=$(grep -A 5 "^  safety:" "$SOURCE_FILE" | grep "imageTag:" | sed 's/.*imageTag:[[:space:]]*"\(.*\)".*/\1/')
+          USER_TAG=$(grep -A 5 "^  user:" "$SOURCE_FILE" | grep "imageTag:" | sed 's/.*imageTag:[[:space:]]*"\(.*\)".*/\1/')
+          
+          echo "FRONTEND_TAG=$FRONTEND_TAG" >> $GITHUB_ENV
+          echo "EVENT_TAG=$EVENT_TAG" >> $GITHUB_ENV
+          echo "GROUP_TAG=$GROUP_TAG" >> $GITHUB_ENV
+          echo "RATING_TAG=$RATING_TAG" >> $GITHUB_ENV
+          echo "SAFETY_TAG=$SAFETY_TAG" >> $GITHUB_ENV
+          echo "USER_TAG=$USER_TAG" >> $GITHUB_ENV
+          
+          echo "📦 Extracted tags from ${{ github.event.inputs.source_env }}:"
+          echo "  Frontend: $FRONTEND_TAG"
+          echo "  Event: $EVENT_TAG"
+          echo "  Group: $GROUP_TAG"
+          echo "  Rating: $RATING_TAG"
+          echo "  Safety: $SAFETY_TAG"
+          echo "  User: $USER_TAG"
+      
+      - name: Update target environment image tags
+        run: |
+          TARGET_FILE="environments/${{ github.event.inputs.target_env }}/values.yaml"
+          
+          # Update frontend tag
+          sed -i "/^frontend:/,/^[^ ]/ s/^\(  imageTag: \).*/\1\"$FRONTEND_TAG\"/" "$TARGET_FILE"
+          
+          # Update service tags
+          sed -i "/^  event:/,/^  [a-z]/ s/^\(    imageTag: \).*/\1\"$EVENT_TAG\"/" "$TARGET_FILE"
+          sed -i "/^  group:/,/^  [a-z]/ s/^\(    imageTag: \).*/\1\"$GROUP_TAG\"/" "$TARGET_FILE"
+          sed -i "/^  rating:/,/^  [a-z]/ s/^\(    imageTag: \).*/\1\"$RATING_TAG\"/" "$TARGET_FILE"
+          sed -i "/^  safety:/,/^  [a-z]/ s/^\(    imageTag: \).*/\1\"$SAFETY_TAG\"/" "$TARGET_FILE"
+          sed -i "/^  user:/,/^  [a-z]/ s/^\(    imageTag: \).*/\1\"$RATING_TAG\"/" "$TARGET_FILE"
+          
+          echo "✅ Updated $TARGET_FILE with tags from ${{ github.event.inputs.source_env }}"
+      
+      - name: Show diff
+        run: |
+          echo "📝 Changes to be committed:"
+          git diff environments/${{ github.event.inputs.target_env }}/values.yaml
+      
+      - name: Commit and push promotion
+        run: |
+          git config --global user.name 'GitHub Actions Bot'
+          git config --global user.email 'actions@github.com'
+          
+          git add environments/${{ github.event.inputs.target_env }}/values.yaml
+          
+          if git diff --staged --quiet; then
+            echo "⚠️ No changes to commit - tags are already up to date"
+          else
+            git pull --rebase --autostash origin main
+            
+            git commit -m "chore(${{ github.event.inputs.target_env }}): promote from ${{ github.event.inputs.source_env }} [skip ci]
+
+Promoted images:
+- Frontend: $FRONTEND_TAG
+- Event: $EVENT_TAG
+- Group: $GROUP_TAG
+- Rating: $RATING_TAG
+- Safety: $SAFETY_TAG
+- User: $USER_TAG"
+            
+            git push origin main
+            
+            echo "🚀 Successfully promoted to ${{ github.event.inputs.target_env }}"
+            echo "🔄 ArgoCD will sync automatically"
+          fi
+      
+      - name: Deployment summary
+        run: |
+          echo "## 🎉 Promotion Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Source:** \`${{ github.event.inputs.source_env }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Target:** \`${{ github.event.inputs.target_env }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Promoted Image Tags" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Service | Tag |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|-----|" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend | \`$FRONTEND_TAG\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Event | \`$EVENT_TAG\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Group | \`$GROUP_TAG\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Rating | \`$RATING_TAG\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Safety | \`$SAFETY_TAG\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| User | \`$USER_TAG\` |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔗 Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ "${{ github.event.inputs.target_env }}" == "staging" ]]; then
+            echo "1. ✅ Monitor ArgoCD sync for \`crewup-staging\`" >> $GITHUB_STEP_SUMMARY
+            echo "2. 🧪 Test on https://crewup-staging.ltu-m7011e-3.se" >> $GITHUB_STEP_SUMMARY
+            echo "3. 🚀 When validated, promote to production" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "1. ✅ Monitor ArgoCD sync for \`crewup-production\`" >> $GITHUB_STEP_SUMMARY
+            echo "2. 🎉 Live on https://crewup.ltu-m7011e-3.se" >> $GITHUB_STEP_SUMMARY
+          fi

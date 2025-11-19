@@ -1,0 +1,66 @@
+# CrewUp Staging Environment
+# Manually promoted from dev for pre-production testing
+
+# Global settings
+namespace: crewup-staging
+imageRegistry: ghcr.io/titouanpastor
+imagePullPolicy: Always
+
+# Domain and SSL configuration
+domain: crewup-staging.ltu-m7011e-3.se
+email: titpas-5@student.ltu.se
+
+# PostgreSQL Database
+postgres:
+  enabled: true
+  version: "15"
+  database: crewup
+  user: crewup
+  password: ""
+  storage: 10Gi  # More storage for staging
+
+# API Services
+services:
+  event:
+    enabled: true
+    replicas: 2  # Test scaling in staging
+    port: 8000
+    imageTag: "latest"  # Manually promoted from dev
+    
+  group:
+    enabled: true
+    replicas: 2
+    port: 8000
+    imageTag: "latest"  # Manually promoted from dev
+    
+  rating:
+    enabled: true
+    replicas: 1
+    port: 8000
+    imageTag: "latest"  # Manually promoted from dev
+    
+  safety:
+    enabled: true
+    replicas: 1
+    port: 8000
+    imageTag: "latest"  # Manually promoted from dev
+    
+  user:
+    enabled: true
+    replicas: 2
+    port: 8000
+    imageTag: "latest"  # Manually promoted from dev
+
+# Frontend
+frontend:
+  enabled: true
+  replicas: 2  # Test HA in staging
+  port: 80
+  imageTag: "latest"  # Manually promoted from dev
+  image: crewup-frontend
+
+# Ingress Settings
+ingress:
+  enabled: true
+  className: traefik
+  certIssuer: letsencrypt-prod  # Use production certs for staging
