@@ -33,9 +33,9 @@ run_unit_tests() {
 # Function to run integration tests
 run_integration_tests() {
     echo -e "${YELLOW}[1/3] Checking service health...${NC}"
-    if ! curl -s http://localhost:8003/api/v1/events/health > /dev/null; then
-        echo -e "${RED}✗ Service is not running on localhost:8003${NC}"
-        echo "Start it with: uvicorn app.main:app --host 0.0.0.0 --port 8003"
+    if ! curl -s http://localhost:8001/api/v1/events/health > /dev/null; then
+        echo -e "${RED}✗ Service is not running on localhost:8001${NC}"
+        echo "Start it with: uvicorn app.main:app --host 0.0.0.0 --port 8001"
         exit 1
     fi
     echo -e "${GREEN}✓ Service is running${NC}"
@@ -77,9 +77,9 @@ case "$TEST_TYPE" in
             echo "Create it with required environment variables"
             exit 1
         fi
-        if ! curl -s http://localhost:8003/api/v1/events/health > /dev/null; then
-            echo -e "${RED}✗ Service is not running on localhost:8003${NC}"
-            echo "Start it with: uvicorn app.main:app --host 0.0.0.0 --port 8003"
+        if ! curl -s http://localhost:8001/api/v1/events/health > /dev/null; then
+            echo -e "${RED}✗ Service is not running on localhost:8001${NC}"
+            echo "Start it with: uvicorn app.main:app --host 0.0.0.0 --port 8001"
             exit 1
         fi
         echo -e "${GREEN}✓ Preconditions OK${NC}"

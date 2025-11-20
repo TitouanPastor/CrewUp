@@ -2,7 +2,7 @@
 Integration tests for Event Service.
 
 These tests require:
-1. Event service running (localhost:8003 or EVENT_SERVICE_URL)
+1. Event service running (localhost:8001 or EVENT_SERVICE_URL)
 2. Database with schema applied
 3. Keycloak running with test users
 4. .env.test file with credentials
@@ -38,7 +38,7 @@ def keycloak_tokens(integration_env):
             verify=False
         )
 
-        assert response.status_code == 200, f"Failed to get token for {username}"
+        assert response.status_code == 200, f"Failed to get token for {username}: {response.text}"
         token_data = response.json()
 
         # Decode token to get user info
@@ -48,12 +48,97 @@ def keycloak_tokens(integration_env):
             "access_token": token_data["access_token"],
             "keycloak_id": decoded["sub"],
             "email": decoded.get("email"),
+            "first_name": decoded.get("given_name", "Test"),
+            "last_name": decoded.get("family_name", "User"),
         }
 
     return {
         "user1": get_token(integration_env["user1_email"], integration_env["user1_password"]),
         "user2": get_token(integration_env["user2_email"], integration_env["user2_password"]),
     }
+
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_test_users(integration_env, keycloak_tokens):
+    """
+    Create test user profiles in the database before running tests.
+    This ensures users exist when creating events.
+    """
+    import psycopg2
+
+    # Parse DATABASE_URL from .env.test
+    db_url = integration_env.get("database_url", "postgresql://crewup:crewup_dev_password@localhost:5432/crewup")
+
+    # Connect to database
+    try:
+        conn = psycopg2.connect(db_url)
+        cursor = conn.cursor()
+
+        # Insert user1
+        user1 = keycloak_tokens["user1"]
+        cursor.execute(
+            """
+            INSERT INTO users (id, keycloak_id, email, first_name, last_name, bio, interests, reputation, is_active)
+            VALUES (gen_random_uuid(), %s, %s, %s, %s, %s, %s, 0.00, true)
+            ON CONFLICT (keycloak_id) DO NOTHING
+            """,
+            (
+                user1["keycloak_id"],
+                user1["email"],
+                user1.get("first_name", "Test"),
+                user1.get("last_name", "User1"),
+                "Test user 1 for integration tests",
+                []
+            )
+        )
+
+        # Insert user2
+        user2 = keycloak_tokens["user2"]
+        cursor.execute(
+            """
+            INSERT INTO users (id, keycloak_id, email, first_name, last_name, bio, interests, reputation, is_active)
+            VALUES (gen_random_uuid(), %s, %s, %s, %s, %s, %s, 0.00, true)
+            ON CONFLICT (keycloak_id) DO NOTHING
+            """,
+            (
+                user2["keycloak_id"],
+                user2["email"],
+                user2.get("first_name", "Test"),
+                user2.get("last_name", "User2"),
+                "Test user 2 for integration tests",
+                []
+            )
+        )
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        print(f"\n✓ Test users created in database")
+
+    except Exception as e:
+        print(f"\nWarning: Could not create test users in database: {e}")
+        print("Tests may fail if users don't exist")
+
+    yield
+
+    # Cleanup: Delete ALL events after tests complete
+    try:
+        conn = psycopg2.connect(db_url)
+        cursor = conn.cursor()
+
+        # Delete ALL events from the database (not just test events)
+        cursor.execute("DELETE FROM events")
+        deleted_count = cursor.rowcount
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        print(f"\n✓ Cleanup: Deleted {deleted_count} events from database")
+
+    except Exception as e:
+        print(f"\nWarning: Could not cleanup events: {e}")
 
 
 @pytest.fixture(scope="session")
@@ -86,10 +171,36 @@ def api_client(integration_env):
     return APIClient(integration_env["service_url"])
 
 
+@pytest.fixture(scope="function")
+def cleanup_events(api_client, keycloak_tokens):
+    """
+    Track events created during a test and delete them after the test completes.
+    Usage: Call cleanup_events.add(event_id, creator_token) when creating an event.
+    """
+    created_events = []
+
+    class EventTracker:
+        def add(self, event_id: str, creator_token: str):
+            """Register an event to be deleted after the test."""
+            created_events.append((event_id, creator_token))
+            return event_id
+
+    tracker = EventTracker()
+
+    yield tracker
+
+    # Cleanup: Delete all events created during this test, even if test failed
+    for event_id, token in created_events:
+        try:
+            api_client.delete(f"/api/v1/events/{event_id}", token=token)
+        except Exception as e:
+            print(f"Warning: Could not delete event {event_id}: {e}")
+
+
 class TestEventCRUD:
     """Test event CRUD operations."""
 
-    def test_create_event_success(self, api_client, keycloak_tokens):
+    def test_create_event_success(self, api_client, keycloak_tokens, cleanup_events):
         """Test creating a new event with valid data."""
         event_start = datetime.now(timezone.utc) + timedelta(hours=2)
         event_end = event_start + timedelta(hours=3)
@@ -115,6 +226,9 @@ class TestEventCRUD:
         assert response.status_code == 201
         data = response.json()
 
+        # Register event for cleanup
+        cleanup_events.add(data["id"], keycloak_tokens["user1"]["access_token"])
+
         # Verify response structure
         assert "id" in data
         assert data["name"] == "Integration Test Event"
@@ -131,10 +245,7 @@ class TestEventCRUD:
         assert data["is_full"] is False
         assert data["user_status"] is None
 
-        # Cleanup: delete the event
-        api_client.delete(f"/api/v1/events/{data['id']}", token=keycloak_tokens["user1"]["access_token"])
-
-    def test_create_event_with_minimal_data(self, api_client, keycloak_tokens):
+    def test_create_event_with_minimal_data(self, api_client, keycloak_tokens, cleanup_events):
         """Test creating event with only required fields."""
         event_start = datetime.now(timezone.utc) + timedelta(hours=2)
         event_end = event_start + timedelta(hours=2)
@@ -155,6 +266,9 @@ class TestEventCRUD:
         assert response.status_code == 201
         data = response.json()
 
+        # Register event for cleanup
+        cleanup_events.add(data["id"], keycloak_tokens["user1"]["access_token"])
+
         assert data["name"] == "Minimal Event"
         assert data["event_type"] == "other"  # Default value
         assert data["description"] is None
@@ -162,10 +276,8 @@ class TestEventCRUD:
         assert data["longitude"] is None
         assert data["max_attendees"] is None  # Unlimited
 
-        # Cleanup
-        api_client.delete(f"/api/v1/events/{data['id']}", token=keycloak_tokens["user1"]["access_token"])
 
-    def test_create_event_with_unlimited_capacity(self, api_client, keycloak_tokens):
+    def test_create_event_with_unlimited_capacity(self, api_client, keycloak_tokens, cleanup_events):
         """Test creating event with null max_attendees (unlimited)."""
         event_start = datetime.now(timezone.utc) + timedelta(hours=2)
         event_end = event_start + timedelta(hours=2)
@@ -186,13 +298,14 @@ class TestEventCRUD:
 
         assert response.status_code == 201
         data = response.json()
+
+        # Register event for cleanup
+        cleanup_events.add(data["id"], keycloak_tokens["user1"]["access_token"])
         assert data["max_attendees"] is None
         assert data["is_full"] is False
 
-        # Cleanup
-        api_client.delete(f"/api/v1/events/{data['id']}", token=keycloak_tokens["user1"]["access_token"])
 
-    def test_create_event_with_min_capacity(self, api_client, keycloak_tokens):
+    def test_create_event_with_min_capacity(self, api_client, keycloak_tokens, cleanup_events):
         """Test creating event with min allowed capacity (2)."""
         event_start = datetime.now(timezone.utc) + timedelta(hours=2)
         event_end = event_start + timedelta(hours=2)
@@ -213,10 +326,11 @@ class TestEventCRUD:
 
         assert response.status_code == 201
         data = response.json()
+
+        # Register event for cleanup
+        cleanup_events.add(data["id"], keycloak_tokens["user1"]["access_token"])
         assert data["max_attendees"] == 2
 
-        # Cleanup
-        api_client.delete(f"/api/v1/events/{data['id']}", token=keycloak_tokens["user1"]["access_token"])
 
     def test_create_event_user_not_in_db(self, api_client):
         """Test creating event when user JWT valid but not in database."""
@@ -224,7 +338,7 @@ class TestEventCRUD:
         # Skip for now as it requires special setup
         pass
 
-    def test_get_event_success(self, api_client, keycloak_tokens):
+    def test_get_event_success(self, api_client, keycloak_tokens, cleanup_events):
         """Test getting event details."""
         # First create an event
         event_start = datetime.now(timezone.utc) + timedelta(hours=2)
@@ -247,6 +361,7 @@ class TestEventCRUD:
         )
         assert create_response.status_code == 201
         event_id = create_response.json()["id"]
+        cleanup_events.add(event_id, keycloak_tokens["user1"]["access_token"])
 
         # Now get the event
         get_response = api_client.get(
@@ -277,10 +392,8 @@ class TestEventCRUD:
         assert "creator_last_name" in data
         assert "creator_profile_picture" in data
 
-        # Cleanup
-        api_client.delete(f"/api/v1/events/{event_id}", token=keycloak_tokens["user1"]["access_token"])
 
-    def test_get_event_not_found(self, api_client, keycloak_tokens):
+    def test_get_event_not_found(self, api_client, keycloak_tokens, cleanup_events):
         """Test getting non-existent event returns 404."""
         fake_uuid = "00000000-0000-0000-0000-000000000000"
         response = api_client.get(
@@ -289,7 +402,7 @@ class TestEventCRUD:
         )
         assert response.status_code == 404
 
-    def test_get_event_with_participants(self, api_client, keycloak_tokens):
+    def test_get_event_with_participants(self, api_client, keycloak_tokens, cleanup_events):
         """Test getting event shows participant counts after users join."""
         # Create an event
         event_start = datetime.now(timezone.utc) + timedelta(hours=2)
@@ -309,6 +422,7 @@ class TestEventCRUD:
             json=event_data
         )
         event_id = create_response.json()["id"]
+        cleanup_events.add(event_id, keycloak_tokens["user1"]["access_token"])
 
         # User 1 joins as 'going'
         api_client.post(
@@ -348,10 +462,8 @@ class TestEventCRUD:
         data2 = get_response2.json()
         assert data2["user_status"] == "interested"  # User 2's status
 
-        # Cleanup
-        api_client.delete(f"/api/v1/events/{event_id}", token=keycloak_tokens["user1"]["access_token"])
 
-    def test_update_event_success(self, api_client, keycloak_tokens):
+    def test_update_event_success(self, api_client, keycloak_tokens, cleanup_events):
         """Test successfully updating event fields."""
         # Create an event
         event_start = datetime.now(timezone.utc) + timedelta(hours=2)
@@ -371,6 +483,7 @@ class TestEventCRUD:
             json=event_data
         )
         event_id = create_response.json()["id"]
+        cleanup_events.add(event_id, keycloak_tokens["user1"]["access_token"])
 
         # Update the event
         update_data = {
@@ -395,10 +508,8 @@ class TestEventCRUD:
         # Original fields unchanged
         assert data["address"] == "Original Address"
 
-        # Cleanup
-        api_client.delete(f"/api/v1/events/{event_id}", token=keycloak_tokens["user1"]["access_token"])
 
-    def test_update_event_not_creator(self, api_client, keycloak_tokens):
+    def test_update_event_not_creator(self, api_client, keycloak_tokens, cleanup_events):
         """Test that only creator can update event (403)."""
         # User 1 creates event
         event_start = datetime.now(timezone.utc) + timedelta(hours=2)
@@ -417,6 +528,7 @@ class TestEventCRUD:
             json=event_data
         )
         event_id = create_response.json()["id"]
+        cleanup_events.add(event_id, keycloak_tokens["user1"]["access_token"])
 
         # User 2 tries to update
         update_response = api_client.put(
@@ -427,10 +539,8 @@ class TestEventCRUD:
 
         assert update_response.status_code == 403
 
-        # Cleanup
-        api_client.delete(f"/api/v1/events/{event_id}", token=keycloak_tokens["user1"]["access_token"])
 
-    def test_update_event_empty_body(self, api_client, keycloak_tokens):
+    def test_update_event_empty_body(self, api_client, keycloak_tokens, cleanup_events):
         """Test updating with empty body returns 200 no-op."""
         # Create event
         event_start = datetime.now(timezone.utc) + timedelta(hours=2)
@@ -449,6 +559,7 @@ class TestEventCRUD:
             json=event_data
         )
         event_id = create_response.json()["id"]
+        cleanup_events.add(event_id, keycloak_tokens["user1"]["access_token"])
         original_name = create_response.json()["name"]
 
         # Update with empty body
@@ -461,10 +572,8 @@ class TestEventCRUD:
         assert update_response.status_code == 200
         assert update_response.json()["name"] == original_name  # Unchanged
 
-        # Cleanup
-        api_client.delete(f"/api/v1/events/{event_id}", token=keycloak_tokens["user1"]["access_token"])
 
-    def test_update_event_reduce_capacity_below_participants(self, api_client, keycloak_tokens):
+    def test_update_event_reduce_capacity_below_participants(self, api_client, keycloak_tokens, cleanup_events):
         """Test cannot reduce max_attendees below current participant count."""
         # Create event with capacity 10
         event_start = datetime.now(timezone.utc) + timedelta(hours=2)
@@ -484,6 +593,7 @@ class TestEventCRUD:
             json=event_data
         )
         event_id = create_response.json()["id"]
+        cleanup_events.add(event_id, keycloak_tokens["user1"]["access_token"])
 
         # Two users join
         api_client.post(
@@ -523,10 +633,8 @@ class TestEventCRUD:
         )
         assert update_response3.status_code == 422  # Fails Pydantic validation (min 2)
 
-        # Cleanup
-        api_client.delete(f"/api/v1/events/{event_id}", token=keycloak_tokens["user1"]["access_token"])
 
-    def test_update_event_cancel_and_uncancel(self, api_client, keycloak_tokens):
+    def test_update_event_cancel_and_uncancel(self, api_client, keycloak_tokens, cleanup_events):
         """Test cancelling and uncancelling an event."""
         # Create event
         event_start = datetime.now(timezone.utc) + timedelta(hours=2)
@@ -545,6 +653,7 @@ class TestEventCRUD:
             json=event_data
         )
         event_id = create_response.json()["id"]
+        cleanup_events.add(event_id, keycloak_tokens["user1"]["access_token"])
 
         # Cancel event
         cancel_response = api_client.put(
@@ -566,10 +675,8 @@ class TestEventCRUD:
         assert uncancel_response.status_code == 200
         assert uncancel_response.json()["is_cancelled"] is False
 
-        # Cleanup
-        api_client.delete(f"/api/v1/events/{event_id}", token=keycloak_tokens["user1"]["access_token"])
 
-    def test_update_event_set_unlimited_capacity(self, api_client, keycloak_tokens):
+    def test_update_event_set_unlimited_capacity(self, api_client, keycloak_tokens, cleanup_events):
         """Test setting max_attendees to null (unlimited)."""
         # Create event with limited capacity
         event_start = datetime.now(timezone.utc) + timedelta(hours=2)
@@ -589,6 +696,7 @@ class TestEventCRUD:
             json=event_data
         )
         event_id = create_response.json()["id"]
+        cleanup_events.add(event_id, keycloak_tokens["user1"]["access_token"])
 
         # Update to unlimited
         update_response = api_client.put(
@@ -601,10 +709,8 @@ class TestEventCRUD:
         assert update_response.json()["max_attendees"] is None
         assert update_response.json()["is_full"] is False
 
-        # Cleanup
-        api_client.delete(f"/api/v1/events/{event_id}", token=keycloak_tokens["user1"]["access_token"])
 
-    def test_update_event_partial_update(self, api_client, keycloak_tokens):
+    def test_update_event_partial_update(self, api_client, keycloak_tokens, cleanup_events):
         """Test updating only one field keeps others unchanged."""
         # Create event
         event_start = datetime.now(timezone.utc) + timedelta(hours=2)
@@ -626,6 +732,7 @@ class TestEventCRUD:
             json=event_data
         )
         event_id = create_response.json()["id"]
+        cleanup_events.add(event_id, keycloak_tokens["user1"]["access_token"])
 
         # Update only description
         update_response = api_client.patch(
@@ -645,10 +752,8 @@ class TestEventCRUD:
         assert data["address"] == "Original Address"
         assert data["max_attendees"] == 50
 
-        # Cleanup
-        api_client.delete(f"/api/v1/events/{event_id}", token=keycloak_tokens["user1"]["access_token"])
 
-    def test_delete_event_success(self, api_client, keycloak_tokens):
+    def test_delete_event_success(self, api_client, keycloak_tokens, cleanup_events):
         """Test successfully deleting an event (soft delete)."""
         # Create an event
         event_start = datetime.now(timezone.utc) + timedelta(hours=2)
@@ -667,6 +772,7 @@ class TestEventCRUD:
             json=event_data
         )
         event_id = create_response.json()["id"]
+        cleanup_events.add(event_id, keycloak_tokens["user1"]["access_token"])
 
         # Delete the event
         delete_response = api_client.delete(
@@ -685,7 +791,7 @@ class TestEventCRUD:
         assert get_response.status_code == 200
         assert get_response.json()["is_cancelled"] is True
 
-    def test_delete_event_not_creator(self, api_client, keycloak_tokens):
+    def test_delete_event_not_creator(self, api_client, keycloak_tokens, cleanup_events):
         """Test that only creator can delete event (403)."""
         # User 1 creates event
         event_start = datetime.now(timezone.utc) + timedelta(hours=2)
@@ -704,6 +810,7 @@ class TestEventCRUD:
             json=event_data
         )
         event_id = create_response.json()["id"]
+        cleanup_events.add(event_id, keycloak_tokens["user1"]["access_token"])
 
         # User 2 tries to delete
         delete_response = api_client.delete(
@@ -713,10 +820,8 @@ class TestEventCRUD:
 
         assert delete_response.status_code == 403
 
-        # Cleanup - User 1 deletes
-        api_client.delete(f"/api/v1/events/{event_id}", token=keycloak_tokens["user1"]["access_token"])
 
-    def test_delete_event_not_found(self, api_client, keycloak_tokens):
+    def test_delete_event_not_found(self, api_client, keycloak_tokens, cleanup_events):
         """Test deleting non-existent event returns 404."""
         fake_uuid = "00000000-0000-0000-0000-000000000000"
         response = api_client.delete(
@@ -725,7 +830,7 @@ class TestEventCRUD:
         )
         assert response.status_code == 404
 
-    def test_delete_event_idempotent(self, api_client, keycloak_tokens):
+    def test_delete_event_idempotent(self, api_client, keycloak_tokens, cleanup_events):
         """Test deleting already deleted event is idempotent (200)."""
         # Create event
         event_start = datetime.now(timezone.utc) + timedelta(hours=2)
@@ -744,6 +849,7 @@ class TestEventCRUD:
             json=event_data
         )
         event_id = create_response.json()["id"]
+        cleanup_events.add(event_id, keycloak_tokens["user1"]["access_token"])
 
         # Delete once
         delete_response1 = api_client.delete(
@@ -760,7 +866,7 @@ class TestEventCRUD:
         assert delete_response2.status_code == 200
         assert delete_response2.json()["message"] == "Event deleted successfully"
 
-    def test_delete_event_with_participants(self, api_client, keycloak_tokens):
+    def test_delete_event_with_participants(self, api_client, keycloak_tokens, cleanup_events):
         """Test deleting event with participants (soft delete preserves data)."""
         # Create event
         event_start = datetime.now(timezone.utc) + timedelta(hours=2)
@@ -779,6 +885,7 @@ class TestEventCRUD:
             json=event_data
         )
         event_id = create_response.json()["id"]
+        cleanup_events.add(event_id, keycloak_tokens["user1"]["access_token"])
 
         # Users join
         api_client.post(
@@ -814,7 +921,7 @@ class TestEventCRUD:
 class TestEventRSVP:
     """Test event RSVP operations."""
 
-    def test_join_event_success(self, api_client, keycloak_tokens):
+    def test_join_event_success(self, api_client, keycloak_tokens, cleanup_events):
         """Test successfully joining an event."""
         # Create event
         event_start = datetime.now(timezone.utc) + timedelta(hours=2)
@@ -834,6 +941,7 @@ class TestEventRSVP:
             json=event_data
         )
         event_id = create_response.json()["id"]
+        cleanup_events.add(event_id, keycloak_tokens["user1"]["access_token"])
 
         # Join event
         join_response = api_client.post(
@@ -853,10 +961,8 @@ class TestEventRSVP:
         assert get_response.json()["participant_count"] == 1
         assert get_response.json()["user_status"] == "going"
 
-        # Cleanup
-        api_client.delete(f"/api/v1/events/{event_id}", token=keycloak_tokens["user1"]["access_token"])
 
-    def test_join_event_default_status(self, api_client, keycloak_tokens):
+    def test_join_event_default_status(self, api_client, keycloak_tokens, cleanup_events):
         """Test joining event with default status (going)."""
         # Create event
         event_start = datetime.now(timezone.utc) + timedelta(hours=2)
@@ -875,6 +981,7 @@ class TestEventRSVP:
             json=event_data
         )
         event_id = create_response.json()["id"]
+        cleanup_events.add(event_id, keycloak_tokens["user1"]["access_token"])
 
         # Join without status (should default to 'going')
         join_response = api_client.post(
@@ -891,10 +998,8 @@ class TestEventRSVP:
         )
         assert get_response.json()["user_status"] == "going"
 
-        # Cleanup
-        api_client.delete(f"/api/v1/events/{event_id}", token=keycloak_tokens["user1"]["access_token"])
 
-    def test_join_event_as_interested(self, api_client, keycloak_tokens):
+    def test_join_event_as_interested(self, api_client, keycloak_tokens, cleanup_events):
         """Test joining event with 'interested' status."""
         # Create event
         event_start = datetime.now(timezone.utc) + timedelta(hours=2)
@@ -913,6 +1018,7 @@ class TestEventRSVP:
             json=event_data
         )
         event_id = create_response.json()["id"]
+        cleanup_events.add(event_id, keycloak_tokens["user1"]["access_token"])
 
         # Join as interested
         join_response = api_client.post(
@@ -932,10 +1038,8 @@ class TestEventRSVP:
         assert get_response.json()["interested_count"] == 1
         assert get_response.json()["user_status"] == "interested"
 
-        # Cleanup
-        api_client.delete(f"/api/v1/events/{event_id}", token=keycloak_tokens["user1"]["access_token"])
 
-    def test_join_event_full_capacity(self, api_client, keycloak_tokens):
+    def test_join_event_full_capacity(self, api_client, keycloak_tokens, cleanup_events):
         """Test joining event when at capacity returns 400."""
         # Create event with capacity 1
         event_start = datetime.now(timezone.utc) + timedelta(hours=2)
@@ -955,6 +1059,7 @@ class TestEventRSVP:
             json=event_data
         )
         event_id = create_response.json()["id"]
+        cleanup_events.add(event_id, keycloak_tokens["user1"]["access_token"])
 
         # User 1 joins
         api_client.post(
@@ -975,10 +1080,8 @@ class TestEventRSVP:
         # Note: We can't test this without a 3rd user, so let's skip for now
         # The integration test setup only has 2 users
 
-        # Cleanup
-        api_client.delete(f"/api/v1/events/{event_id}", token=keycloak_tokens["user1"]["access_token"])
 
-    def test_join_event_idempotent(self, api_client, keycloak_tokens):
+    def test_join_event_idempotent(self, api_client, keycloak_tokens, cleanup_events):
         """Test joining same event twice is idempotent."""
         # Create event
         event_start = datetime.now(timezone.utc) + timedelta(hours=2)
@@ -997,6 +1100,7 @@ class TestEventRSVP:
             json=event_data
         )
         event_id = create_response.json()["id"]
+        cleanup_events.add(event_id, keycloak_tokens["user1"]["access_token"])
 
         # Join once
         join_response1 = api_client.post(
@@ -1021,10 +1125,8 @@ class TestEventRSVP:
         )
         assert get_response.json()["participant_count"] == 1
 
-        # Cleanup
-        api_client.delete(f"/api/v1/events/{event_id}", token=keycloak_tokens["user1"]["access_token"])
 
-    def test_join_event_change_status(self, api_client, keycloak_tokens):
+    def test_join_event_change_status(self, api_client, keycloak_tokens, cleanup_events):
         """Test changing RSVP status."""
         # Create event
         event_start = datetime.now(timezone.utc) + timedelta(hours=2)
@@ -1043,6 +1145,7 @@ class TestEventRSVP:
             json=event_data
         )
         event_id = create_response.json()["id"]
+        cleanup_events.add(event_id, keycloak_tokens["user1"]["access_token"])
 
         # Join as 'interested'
         api_client.post(
@@ -1068,10 +1171,8 @@ class TestEventRSVP:
         assert get_response.json()["participant_count"] == 1
         assert get_response.json()["interested_count"] == 0
 
-        # Cleanup
-        api_client.delete(f"/api/v1/events/{event_id}", token=keycloak_tokens["user1"]["access_token"])
 
-    def test_join_cancelled_event(self, api_client, keycloak_tokens):
+    def test_join_cancelled_event(self, api_client, keycloak_tokens, cleanup_events):
         """Test cannot join cancelled event."""
         # Create and cancel event
         event_start = datetime.now(timezone.utc) + timedelta(hours=2)
@@ -1090,6 +1191,7 @@ class TestEventRSVP:
             json=event_data
         )
         event_id = create_response.json()["id"]
+        cleanup_events.add(event_id, keycloak_tokens["user1"]["access_token"])
 
         # Cancel event
         api_client.put(
@@ -1107,10 +1209,8 @@ class TestEventRSVP:
 
         assert join_response.status_code == 400
 
-        # Cleanup
-        api_client.delete(f"/api/v1/events/{event_id}", token=keycloak_tokens["user1"]["access_token"])
 
-    def test_join_event_not_found(self, api_client, keycloak_tokens):
+    def test_join_event_not_found(self, api_client, keycloak_tokens, cleanup_events):
         """Test joining non-existent event returns 404."""
         fake_uuid = "00000000-0000-0000-0000-000000000000"
         response = api_client.post(
@@ -1119,7 +1219,7 @@ class TestEventRSVP:
         )
         assert response.status_code == 404
 
-    def test_leave_event_success(self, api_client, keycloak_tokens):
+    def test_leave_event_success(self, api_client, keycloak_tokens, cleanup_events):
         """Test successfully leaving an event after joining."""
         # Create event
         event_start = datetime.now(timezone.utc) + timedelta(hours=2)
@@ -1138,6 +1238,7 @@ class TestEventRSVP:
             json=event_data
         )
         event_id = create_response.json()["id"]
+        cleanup_events.add(event_id, keycloak_tokens["user1"]["access_token"])
 
         # Join event
         api_client.post(
@@ -1170,10 +1271,8 @@ class TestEventRSVP:
         assert get_response.json()["user_status"] == "not_going"
         assert get_response.json()["participant_count"] == 0
 
-        # Cleanup
-        api_client.delete(f"/api/v1/events/{event_id}", token=keycloak_tokens["user1"]["access_token"])
 
-    def test_leave_event_idempotent_not_joined(self, api_client, keycloak_tokens):
+    def test_leave_event_idempotent_not_joined(self, api_client, keycloak_tokens, cleanup_events):
         """Test leaving event when not joined is idempotent."""
         # Create event
         event_start = datetime.now(timezone.utc) + timedelta(hours=2)
@@ -1192,6 +1291,7 @@ class TestEventRSVP:
             json=event_data
         )
         event_id = create_response.json()["id"]
+        cleanup_events.add(event_id, keycloak_tokens["user1"]["access_token"])
 
         # Leave without joining
         leave_response = api_client.delete(
@@ -1201,10 +1301,8 @@ class TestEventRSVP:
         assert leave_response.status_code == 200
         assert leave_response.json()["message"] == "Successfully left event"
 
-        # Cleanup
-        api_client.delete(f"/api/v1/events/{event_id}", token=keycloak_tokens["user1"]["access_token"])
 
-    def test_leave_event_idempotent_already_left(self, api_client, keycloak_tokens):
+    def test_leave_event_idempotent_already_left(self, api_client, keycloak_tokens, cleanup_events):
         """Test leaving event twice is idempotent."""
         # Create event
         event_start = datetime.now(timezone.utc) + timedelta(hours=2)
@@ -1223,6 +1321,7 @@ class TestEventRSVP:
             json=event_data
         )
         event_id = create_response.json()["id"]
+        cleanup_events.add(event_id, keycloak_tokens["user1"]["access_token"])
 
         # Join event
         api_client.post(
@@ -1245,10 +1344,8 @@ class TestEventRSVP:
         assert leave_response.status_code == 200
         assert leave_response.json()["message"] == "Successfully left event"
 
-        # Cleanup
-        api_client.delete(f"/api/v1/events/{event_id}", token=keycloak_tokens["user1"]["access_token"])
 
-    def test_leave_cancelled_event(self, api_client, keycloak_tokens):
+    def test_leave_cancelled_event(self, api_client, keycloak_tokens, cleanup_events):
         """Test can leave a cancelled event."""
         # Create event
         event_start = datetime.now(timezone.utc) + timedelta(hours=2)
@@ -1267,6 +1364,7 @@ class TestEventRSVP:
             json=event_data
         )
         event_id = create_response.json()["id"]
+        cleanup_events.add(event_id, keycloak_tokens["user1"]["access_token"])
 
         # Join event
         api_client.post(
@@ -1289,10 +1387,8 @@ class TestEventRSVP:
         )
         assert leave_response.status_code == 200
 
-        # Cleanup
-        api_client.delete(f"/api/v1/events/{event_id}", token=keycloak_tokens["user1"]["access_token"])
 
-    def test_leave_event_creator_allowed(self, api_client, keycloak_tokens):
+    def test_leave_event_creator_allowed(self, api_client, keycloak_tokens, cleanup_events):
         """Test event creator can leave their own event."""
         # Create event
         event_start = datetime.now(timezone.utc) + timedelta(hours=2)
@@ -1311,6 +1407,7 @@ class TestEventRSVP:
             json=event_data
         )
         event_id = create_response.json()["id"]
+        cleanup_events.add(event_id, keycloak_tokens["user1"]["access_token"])
 
         # Creator joins their own event
         api_client.post(
@@ -1334,10 +1431,8 @@ class TestEventRSVP:
         assert get_response.status_code == 200
         assert get_response.json()["is_cancelled"] is False
 
-        # Cleanup
-        api_client.delete(f"/api/v1/events/{event_id}", token=keycloak_tokens["user1"]["access_token"])
 
-    def test_leave_event_frees_capacity(self, api_client, keycloak_tokens):
+    def test_leave_event_frees_capacity(self, api_client, keycloak_tokens, cleanup_events):
         """Test leaving event frees up capacity."""
         # Create event with capacity 1
         event_start = datetime.now(timezone.utc) + timedelta(hours=2)
@@ -1357,6 +1452,7 @@ class TestEventRSVP:
             json=event_data
         )
         event_id = create_response.json()["id"]
+        cleanup_events.add(event_id, keycloak_tokens["user1"]["access_token"])
 
         # User2 joins
         api_client.post(
@@ -1393,10 +1489,8 @@ class TestEventRSVP:
         assert get_response.json()["is_full"] is False
         assert get_response.json()["participant_count"] == 1
 
-        # Cleanup
-        api_client.delete(f"/api/v1/events/{event_id}", token=keycloak_tokens["user1"]["access_token"])
 
-    def test_leave_event_not_found(self, api_client, keycloak_tokens):
+    def test_leave_event_not_found(self, api_client, keycloak_tokens, cleanup_events):
         """Test leaving non-existent event returns 404."""
         fake_uuid = "00000000-0000-0000-0000-000000000000"
         response = api_client.delete(
@@ -1409,7 +1503,7 @@ class TestEventRSVP:
 class TestEventListing:
     """Test event listing and search."""
 
-    def test_list_events_default(self, api_client, keycloak_tokens):
+    def test_list_events_default(self, api_client, keycloak_tokens, cleanup_events):
         """Test listing events with default filters (public, future, non-cancelled)."""
         # Create multiple events
         event_start_1 = datetime.now(timezone.utc) + timedelta(hours=2)
@@ -1453,7 +1547,7 @@ class TestEventListing:
             assert "is_full" in event
             assert "creator_first_name" in event
 
-    def test_list_events_filter_by_event_type(self, api_client, keycloak_tokens):
+    def test_list_events_filter_by_event_type(self, api_client, keycloak_tokens, cleanup_events):
         """Test filtering events by event_type."""
         event_start = datetime.now(timezone.utc) + timedelta(hours=2)
 
@@ -1478,7 +1572,9 @@ class TestEventListing:
         bar_response = api_client.post("/api/v1/events", token=keycloak_tokens["user1"]["access_token"], json=bar_data)
 
         concert_id = concert_response.json()["id"]
+        cleanup_events.add(concert_id, keycloak_tokens["user1"]["access_token"])
         bar_id = bar_response.json()["id"]
+        cleanup_events.add(bar_id, keycloak_tokens["user1"]["access_token"])
 
         # Filter by concert type
         response = api_client.get("/api/v1/events?event_type=concert", token=keycloak_tokens["user1"]["access_token"])
@@ -1491,11 +1587,9 @@ class TestEventListing:
         for event in response.json()["events"]:
             assert event["event_type"] == "concert"
 
-        # Cleanup
-        api_client.delete(f"/api/v1/events/{concert_id}", token=keycloak_tokens["user1"]["access_token"])
         api_client.delete(f"/api/v1/events/{bar_id}", token=keycloak_tokens["user1"]["access_token"])
 
-    def test_list_events_filter_by_creator(self, api_client, keycloak_tokens):
+    def test_list_events_filter_by_creator(self, api_client, keycloak_tokens, cleanup_events):
         """Test filtering events by creator_id."""
         event_start = datetime.now(timezone.utc) + timedelta(hours=2)
 
@@ -1509,6 +1603,7 @@ class TestEventListing:
         # User1 creates event
         create_response = api_client.post("/api/v1/events", token=keycloak_tokens["user1"]["access_token"], json=event_data)
         event_id = create_response.json()["id"]
+        cleanup_events.add(event_id, keycloak_tokens["user1"]["access_token"])
         creator_id = create_response.json()["creator_id"]
 
         # Filter by user1's creator_id (with high limit to ensure we get our event)
@@ -1523,10 +1618,8 @@ class TestEventListing:
         for event in response.json()["events"]:
             assert event["creator_id"] == creator_id
 
-        # Cleanup
-        api_client.delete(f"/api/v1/events/{event_id}", token=keycloak_tokens["user1"]["access_token"])
 
-    def test_list_events_filter_by_date_range(self, api_client, keycloak_tokens):
+    def test_list_events_filter_by_date_range(self, api_client, keycloak_tokens, cleanup_events):
         """Test filtering events by date range."""
         base_time = datetime.now(timezone.utc)
 
@@ -1552,7 +1645,9 @@ class TestEventListing:
         late_response = api_client.post("/api/v1/events", token=keycloak_tokens["user1"]["access_token"], json=late_event_data)
 
         early_id = early_response.json()["id"]
+        cleanup_events.add(early_id, keycloak_tokens["user1"]["access_token"])
         late_id = late_response.json()["id"]
+        cleanup_events.add(late_id, keycloak_tokens["user1"]["access_token"])
 
         # Filter for events in the next 3 days
         from urllib.parse import quote
@@ -1571,11 +1666,9 @@ class TestEventListing:
         assert early_id in event_ids
         assert late_id not in event_ids
 
-        # Cleanup
-        api_client.delete(f"/api/v1/events/{early_id}", token=keycloak_tokens["user1"]["access_token"])
         api_client.delete(f"/api/v1/events/{late_id}", token=keycloak_tokens["user1"]["access_token"])
 
-    def test_list_events_filter_by_status(self, api_client, keycloak_tokens):
+    def test_list_events_filter_by_status(self, api_client, keycloak_tokens, cleanup_events):
         """Test filtering events by user's RSVP status."""
         event_start = datetime.now(timezone.utc) + timedelta(hours=2)
 
@@ -1616,11 +1709,9 @@ class TestEventListing:
         assert event1_id in event_ids
         assert event2_id not in event_ids
 
-        # Cleanup
-        api_client.delete(f"/api/v1/events/{event1_id}", token=keycloak_tokens["user1"]["access_token"])
         api_client.delete(f"/api/v1/events/{event2_id}", token=keycloak_tokens["user1"]["access_token"])
 
-    def test_list_events_with_location_filter(self, api_client, keycloak_tokens):
+    def test_list_events_with_location_filter(self, api_client, keycloak_tokens, cleanup_events):
         """Test filtering events by location with radius."""
         event_start = datetime.now(timezone.utc) + timedelta(hours=2)
 
@@ -1648,7 +1739,9 @@ class TestEventListing:
         la_response = api_client.post("/api/v1/events", token=keycloak_tokens["user1"]["access_token"], json=la_event_data)
 
         nyc_id = nyc_response.json()["id"]
+        cleanup_events.add(nyc_id, keycloak_tokens["user1"]["access_token"])
         la_id = la_response.json()["id"]
+        cleanup_events.add(la_id, keycloak_tokens["user1"]["access_token"])
 
         # Search near NYC with 50km radius (with high limit to ensure we get our events)
         response = api_client.get(
@@ -1663,11 +1756,9 @@ class TestEventListing:
         assert nyc_id in event_ids
         assert la_id not in event_ids
 
-        # Cleanup
-        api_client.delete(f"/api/v1/events/{nyc_id}", token=keycloak_tokens["user1"]["access_token"])
         api_client.delete(f"/api/v1/events/{la_id}", token=keycloak_tokens["user1"]["access_token"])
 
-    def test_list_events_pagination(self, api_client, keycloak_tokens):
+    def test_list_events_pagination(self, api_client, keycloak_tokens, cleanup_events):
         """Test event listing pagination."""
         event_start = datetime.now(timezone.utc) + timedelta(hours=2)
 
@@ -1695,11 +1786,10 @@ class TestEventListing:
         assert response.status_code == 200
         assert len(response.json()["events"]) == 2
 
-        # Cleanup
         for event_id in event_ids:
             api_client.delete(f"/api/v1/events/{event_id}", token=keycloak_tokens["user1"]["access_token"])
 
-    def test_list_events_include_cancelled(self, api_client, keycloak_tokens):
+    def test_list_events_include_cancelled(self, api_client, keycloak_tokens, cleanup_events):
         """Test listing cancelled events with is_cancelled filter."""
         event_start = datetime.now(timezone.utc) + timedelta(hours=2)
 
@@ -1713,6 +1803,7 @@ class TestEventListing:
         # Create and cancel event
         create_response = api_client.post("/api/v1/events", token=keycloak_tokens["user1"]["access_token"], json=event_data)
         event_id = create_response.json()["id"]
+        cleanup_events.add(event_id, keycloak_tokens["user1"]["access_token"])
 
         api_client.delete(f"/api/v1/events/{event_id}", token=keycloak_tokens["user1"]["access_token"])
 
@@ -1730,7 +1821,7 @@ class TestEventListing:
 class TestEventParticipants:
     """Test event participant management."""
 
-    def test_get_participants_counts_only(self, api_client, keycloak_tokens):
+    def test_get_participants_counts_only(self, api_client, keycloak_tokens, cleanup_events):
         """Test getting participant counts without details."""
         event_start = datetime.now(timezone.utc) + timedelta(hours=2)
 
@@ -1744,6 +1835,7 @@ class TestEventParticipants:
 
         create_response = api_client.post("/api/v1/events", token=keycloak_tokens["user1"]["access_token"], json=event_data)
         event_id = create_response.json()["id"]
+        cleanup_events.add(event_id, keycloak_tokens["user1"]["access_token"])
 
         # User2 joins as 'going'
         api_client.post(f"/api/v1/events/{event_id}/join", token=keycloak_tokens["user2"]["access_token"], json={"status": "going"})
@@ -1763,10 +1855,8 @@ class TestEventParticipants:
         assert data["total_participants"] == 2  # going + interested
         assert data["attendees"] is None  # No details included
 
-        # Cleanup
-        api_client.delete(f"/api/v1/events/{event_id}", token=keycloak_tokens["user1"]["access_token"])
 
-    def test_get_participants_with_details(self, api_client, keycloak_tokens):
+    def test_get_participants_with_details(self, api_client, keycloak_tokens, cleanup_events):
         """Test getting participant list with details."""
         event_start = datetime.now(timezone.utc) + timedelta(hours=2)
 
@@ -1780,6 +1870,7 @@ class TestEventParticipants:
 
         create_response = api_client.post("/api/v1/events", token=keycloak_tokens["user1"]["access_token"], json=event_data)
         event_id = create_response.json()["id"]
+        cleanup_events.add(event_id, keycloak_tokens["user1"]["access_token"])
 
         # User2 joins as 'going'
         api_client.post(f"/api/v1/events/{event_id}/join", token=keycloak_tokens["user2"]["access_token"], json={"status": "going"})
@@ -1812,10 +1903,8 @@ class TestEventParticipants:
             # Email should NOT be included (public profile only)
             assert "email" not in attendee
 
-        # Cleanup
-        api_client.delete(f"/api/v1/events/{event_id}", token=keycloak_tokens["user1"]["access_token"])
 
-    def test_get_participants_filter_by_status(self, api_client, keycloak_tokens):
+    def test_get_participants_filter_by_status(self, api_client, keycloak_tokens, cleanup_events):
         """Test filtering participants by status."""
         event_start = datetime.now(timezone.utc) + timedelta(hours=2)
 
@@ -1829,6 +1918,7 @@ class TestEventParticipants:
 
         create_response = api_client.post("/api/v1/events", token=keycloak_tokens["user1"]["access_token"], json=event_data)
         event_id = create_response.json()["id"]
+        cleanup_events.add(event_id, keycloak_tokens["user1"]["access_token"])
 
         # User1 joins as 'going'
         api_client.post(f"/api/v1/events/{event_id}/join", token=keycloak_tokens["user1"]["access_token"], json={"status": "going"})
@@ -1859,10 +1949,8 @@ class TestEventParticipants:
         assert len(data["attendees"]) == 1
         assert data["attendees"][0]["status"] == "interested"
 
-        # Cleanup
-        api_client.delete(f"/api/v1/events/{event_id}", token=keycloak_tokens["user1"]["access_token"])
 
-    def test_get_participants_invalid_status(self, api_client, keycloak_tokens):
+    def test_get_participants_invalid_status(self, api_client, keycloak_tokens, cleanup_events):
         """Test getting participants with invalid status filter."""
         event_start = datetime.now(timezone.utc) + timedelta(hours=2)
 
@@ -1876,16 +1964,15 @@ class TestEventParticipants:
 
         create_response = api_client.post("/api/v1/events", token=keycloak_tokens["user1"]["access_token"], json=event_data)
         event_id = create_response.json()["id"]
+        cleanup_events.add(event_id, keycloak_tokens["user1"]["access_token"])
 
         # Try to get participants with invalid status
         response = api_client.get(f"/api/v1/events/{event_id}/participants?status=invalid_status", token=keycloak_tokens["user1"]["access_token"])
         assert response.status_code == 422
         assert "Invalid status" in response.json()["detail"]
 
-        # Cleanup
-        api_client.delete(f"/api/v1/events/{event_id}", token=keycloak_tokens["user1"]["access_token"])
 
-    def test_get_participants_pagination(self, api_client, keycloak_tokens):
+    def test_get_participants_pagination(self, api_client, keycloak_tokens, cleanup_events):
         """Test participant list pagination."""
         event_start = datetime.now(timezone.utc) + timedelta(hours=2)
 
@@ -1900,6 +1987,7 @@ class TestEventParticipants:
 
         create_response = api_client.post("/api/v1/events", token=keycloak_tokens["user1"]["access_token"], json=event_data)
         event_id = create_response.json()["id"]
+        cleanup_events.add(event_id, keycloak_tokens["user1"]["access_token"])
 
         # User1 and User2 join
         api_client.post(f"/api/v1/events/{event_id}/join", token=keycloak_tokens["user1"]["access_token"], json={"status": "going"})
@@ -1921,10 +2009,8 @@ class TestEventParticipants:
         assert data["total_participants"] == 2
         assert len(data["attendees"]) == 1
 
-        # Cleanup
-        api_client.delete(f"/api/v1/events/{event_id}", token=keycloak_tokens["user1"]["access_token"])
 
-    def test_get_participants_event_not_found(self, api_client, keycloak_tokens):
+    def test_get_participants_event_not_found(self, api_client, keycloak_tokens, cleanup_events):
         """Test getting participants for non-existent event."""
         fake_event_id = "550e8400-e29b-41d4-a716-446655440000"
         response = api_client.get(f"/api/v1/events/{fake_event_id}/participants", token=keycloak_tokens["user1"]["access_token"])

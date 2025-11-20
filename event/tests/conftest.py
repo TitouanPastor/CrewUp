@@ -86,5 +86,6 @@ def integration_env():
         "user1_password": os.getenv("TEST_USER1_PASSWORD"),
         "user2_email": os.getenv("TEST_USER2_EMAIL"),
         "user2_password": os.getenv("TEST_USER2_PASSWORD"),
-        "service_url": os.getenv("EVENT_SERVICE_URL", "http://localhost:8003"),
+        "service_url": os.getenv("EVENT_SERVICE_URL", "http://localhost:8001"),
+        "database_url": os.getenv("DATABASE_URL", "postgresql://crewup:crewup_dev_password@localhost:5432/crewup"),
     }

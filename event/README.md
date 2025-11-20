@@ -67,14 +67,14 @@ cp .env.example .env
 python app.py
 
 # Production
-uvicorn app.main:app --host 0.0.0.0 --port 8003
+uvicorn app.main:app --host 0.0.0.0 --port 8001
 ```
 
 ### Docker
 
 ```bash
 docker build -t crewup-event-service .
-docker run -p 8003:8003 crewup-event-service
+docker run -p 8001:8001 crewup-event-service
 ```
 
 ## API Endpoints
@@ -133,17 +133,17 @@ pytest tests/ -v --cov=app --cov-report=html
 ```bash
 KEYCLOAK_SERVER_URL=https://keycloak.ltu-m7011e-3.se
 KEYCLOAK_REALM=crewup
-KEYCLOAK_CLIENT_ID=crewup-client
+KEYCLOAK_CLIENT_ID=crewup-test
 TEST_USER1_EMAIL=user1@example.com
 TEST_USER1_PASSWORD=password123
 TEST_USER2_EMAIL=user2@example.com
 TEST_USER2_PASSWORD=password123
-EVENT_SERVICE_URL=http://localhost:8003
+EVENT_SERVICE_URL=http://localhost:8001
 ```
 
 2. Ensure service is running:
 ```bash
-uvicorn app.main:app --host 0.0.0.0 --port 8003
+uvicorn app.main:app --host 0.0.0.0 --port 8001
 ```
 
 3. Run integration tests:
@@ -173,9 +173,9 @@ Configuration is managed through environment variables:
 
 Once running, view the interactive API documentation:
 
-- Swagger UI: http://localhost:8003/api/v1/events/docs
-- ReDoc: http://localhost:8003/api/v1/events/redoc
-- OpenAPI JSON: http://localhost:8003/api/v1/events/openapi.json
+- Swagger UI: http://localhost:8001/api/v1/events/docs
+- ReDoc: http://localhost:8001/api/v1/events/redoc
+- OpenAPI JSON: http://localhost:8001/api/v1/events/openapi.json
 
 ## Development
 
