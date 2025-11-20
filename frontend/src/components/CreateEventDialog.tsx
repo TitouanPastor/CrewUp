@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
 import { useToast } from '@/hooks/use-toast';
 import { eventService } from '@/services/eventService';
 import { Loader2 } from 'lucide-react';
@@ -52,7 +53,7 @@ export default function CreateEventDialog({
     address: '',
     latitude: '',
     longitude: '',
-    event_start: getMinStartTime(),
+    event_start: '',
     event_end: '',
     max_attendees: '',
   });
@@ -205,13 +206,24 @@ export default function CreateEventDialog({
 
             <div className="col-span-2 space-y-2">
               <Label htmlFor="address">Address *</Label>
-              <Input
+              <AddressAutocomplete
                 id="address"
-                placeholder="e.g., Storgatan 15, Luleå"
+                placeholder="Search for an address..."
                 value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                onChange={(value) => setFormData({ ...formData, address: value })}
+                onSelect={(address, lat, lon) => {
+                  setFormData({
+                    ...formData,
+                    address: address,
+                    latitude: lat.toString(),
+                    longitude: lon.toString(),
+                  });
+                }}
                 disabled={loading}
               />
+              <p className="text-xs text-muted-foreground">
+                Start typing to search for an address. Selecting a suggestion will auto-fill coordinates.
+              </p>
             </div>
 
             <div className="space-y-2">

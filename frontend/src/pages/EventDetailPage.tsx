@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
 import { useToast } from '@/hooks/use-toast';
 import { groupService } from '@/services/groupService';
 import { eventService } from '@/services/eventService';
@@ -141,7 +142,7 @@ export default function EventDetailPage() {
   };
 
   const handleCancelEvent = async () => {
-    if (!window.confirm('Are you sure you want to cancel this event? This action cannot be undone.')) {
+    if (!window.confirm('Are you sure you want to cancel this event?')) {
       return;
     }
 
@@ -164,6 +165,52 @@ export default function EventDetailPage() {
       });
     } finally {
       setIsCancelling(false);
+    }
+  };
+
+  const handleUncancelEvent = async () => {
+    if (!window.confirm('Are you sure you want to un-cancel this event?')) {
+      return;
+    }
+
+    try {
+      setIsCancelling(true);
+      await eventService.updateEvent(id!, { is_cancelled: false });
+      toast({
+        title: "Event Restored",
+        description: "This event has been restored and is no longer cancelled.",
+      });
+      // Reload event to show updated status
+      await loadEvent();
+      setIsEditMode(false);
+    } catch (error: any) {
+      console.error('Failed to un-cancel event:', error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.detail || "Failed to restore event. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  const handleLeaveEvent = async () => {
+    try {
+      await eventService.leaveEvent(id!);
+      toast({
+        title: "RSVP Removed",
+        description: "You are no longer attending this event.",
+      });
+      // Reload event to get updated counts and user status
+      loadEvent();
+    } catch (error) {
+      console.error('Failed to leave event:', error);
+      toast({
+        title: "Error",
+        description: "Failed to remove your RSVP. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -350,7 +397,7 @@ export default function EventDetailPage() {
               </h1>
             </div>
             <div className="flex gap-2">
-              {isCreator && !event.is_cancelled && (
+              {isCreator && (
                 <Button
                   variant={isEditMode ? "default" : "outline"}
                   size="icon"
@@ -450,11 +497,23 @@ export default function EventDetailPage() {
 
                         <div className="col-span-2 space-y-2">
                           <Label htmlFor="edit-address">Address *</Label>
-                          <Input
+                          <AddressAutocomplete
                             id="edit-address"
+                            placeholder="Search for an address..."
                             value={editForm.address}
-                            onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+                            onChange={(value) => setEditForm({ ...editForm, address: value })}
+                            onSelect={(address, lat, lon) => {
+                              setEditForm({
+                                ...editForm,
+                                address: address,
+                                latitude: lat.toString(),
+                                longitude: lon.toString(),
+                              });
+                            }}
                           />
+                          <p className="text-xs text-muted-foreground">
+                            Start typing to search for an address. Selecting a suggestion will auto-fill coordinates.
+                          </p>
                         </div>
 
                         <div className="space-y-2">
@@ -662,19 +721,31 @@ export default function EventDetailPage() {
 
                 <Separator />
 
-                {/* Edit Mode - Cancel Event Button */}
-                {isEditMode && isCreator && !event.is_cancelled && (
+                {/* Edit Mode - Cancel/Un-cancel Event Button */}
+                {isEditMode && isCreator && (
                   <>
                     <div className="space-y-2">
-                      <Button
-                        variant="destructive"
-                        className="w-full"
-                        onClick={handleCancelEvent}
-                        disabled={isCancelling}
-                      >
-                        <XCircle className="w-4 h-4 mr-2" />
-                        {isCancelling ? "Cancelling..." : "Cancel Event"}
-                      </Button>
+                      {event.is_cancelled ? (
+                        <Button
+                          variant="default"
+                          className="w-full"
+                          onClick={handleUncancelEvent}
+                          disabled={isCancelling}
+                        >
+                          <XCircle className="w-4 h-4 mr-2" />
+                          {isCancelling ? "Restoring..." : "Un-cancel Event"}
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="destructive"
+                          className="w-full"
+                          onClick={handleCancelEvent}
+                          disabled={isCancelling}
+                        >
+                          <XCircle className="w-4 h-4 mr-2" />
+                          {isCancelling ? "Cancelling..." : "Cancel Event"}
+                        </Button>
+                      )}
                     </div>
                     <Separator />
                   </>
@@ -698,6 +769,14 @@ export default function EventDetailPage() {
                     >
                       <Heart className="w-4 h-4 mr-2" />
                       {event.user_status === 'interested' ? "You're Interested" : "Interested"}
+                    </Button>
+                    <Button
+                      variant={event.user_status === 'not_going' ? 'default' : 'outline'}
+                      className="w-full"
+                      onClick={handleLeaveEvent}
+                    >
+                      <XCircle className="w-4 h-4 mr-2" />
+                      {event.user_status === 'not_going' ? "You're Not Going" : "Not Going"}
                     </Button>
                   </div>
                 )}
