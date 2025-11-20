@@ -6,7 +6,11 @@ For full integration tests with database, see test_integration.py
 """
 import pytest
 from fastapi.testclient import TestClient
+from fastapi import HTTPException
 from datetime import datetime, timedelta, timezone
+from unittest.mock import Mock, MagicMock, patch
+from uuid import UUID, uuid4
+from decimal import Decimal
 
 
 class TestHealthEndpoint:
@@ -419,3 +423,89 @@ class TestAPIDocumentation:
         """Swagger UI docs should be accessible."""
         response = client.get("/api/v1/events/docs")
         assert response.status_code == 200
+
+
+# ==================== Unit Tests with Mocked Database ====================
+
+
+class TestListEventsEdgeCases:
+    """Test list events endpoint edge cases that improve coverage."""
+
+    def test_list_events_with_valid_filters(self, client: TestClient):
+        """Test list events with various valid filters."""
+        # Test with event_type filter
+        response = client.get("/api/v1/events?event_type=concert")
+        assert response.status_code == 200
+
+        # Test with is_public filter
+        response = client.get("/api/v1/events?is_public=true")
+        assert response.status_code == 200
+
+        # Test with is_cancelled filter
+        response = client.get("/api/v1/events?is_cancelled=true")
+        assert response.status_code == 200
+
+        # Test with limit and offset
+        response = client.get("/api/v1/events?limit=10&offset=0")
+        assert response.status_code == 200
+
+    def test_list_events_with_location_filter(self, client: TestClient):
+        """Test list events with location filter."""
+        # Test with valid latitude and longitude
+        response = client.get("/api/v1/events?latitude=40.7128&longitude=-74.0060&radius_km=10")
+        assert response.status_code == 200
+
+    def test_list_events_with_creator_filter(self, client: TestClient):
+        """Test list events with creator_id filter."""
+        creator_id = uuid4()
+        response = client.get(f"/api/v1/events?creator_id={creator_id}")
+        assert response.status_code == 200
+
+
+class TestAuthMiddleware:
+    """Test authentication middleware coverage."""
+
+    @patch("app.middleware.auth.requests.get")
+    def test_get_keycloak_jwks_failure(self, mock_requests_get):
+        """JWKS fetch failure should raise 503."""
+        from app.middleware.auth import get_keycloak_jwks
+
+        # Clear cache first
+        get_keycloak_jwks.cache_clear()
+
+        mock_requests_get.side_effect = Exception("Connection failed")
+
+        with pytest.raises(HTTPException) as exc_info:
+            get_keycloak_jwks()
+
+        assert exc_info.value.status_code == 503
+        assert "unavailable" in exc_info.value.detail
+
+    def test_get_current_user_in_test_mode(self):
+        """In test mode, get_current_user should return mock user when token is provided."""
+        from app.middleware.auth import get_current_user, MOCK_TEST_USER
+        from fastapi.security import HTTPAuthorizationCredentials
+        import asyncio
+
+        credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials="mock-token")
+
+        # Call verify_token with credentials (will be used by get_current_user)
+        from app.middleware.auth import verify_token
+        token_payload = asyncio.run(verify_token(credentials))
+
+        # Now call get_current_user
+        result = asyncio.run(get_current_user(token_payload))
+
+        assert result["keycloak_id"] == MOCK_TEST_USER["keycloak_id"]
+        assert result["email"] == MOCK_TEST_USER["email"]
+
+    def test_verify_token_without_credentials_raises_401(self):
+        """verify_token without credentials should raise 401."""
+        from app.middleware.auth import verify_token
+        import asyncio
+
+        with pytest.raises(HTTPException) as exc_info:
+            asyncio.run(verify_token(None))
+
+        assert exc_info.value.status_code == 401
+        assert "Not authenticated" in exc_info.value.detail

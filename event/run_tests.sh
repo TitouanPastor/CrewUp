@@ -21,7 +21,7 @@ echo ""
 # Function to run unit tests
 run_unit_tests() {
     echo -e "${YELLOW}Running unit tests (no DB required)...${NC}"
-    pytest tests/test_api.py -v \
+    pytest tests/test_api.py tests/test_routes_comprehensive.py -v \
         --cov=app \
         --cov-report=html \
         --cov-report=term-missing:skip-covered \
