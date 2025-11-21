@@ -79,11 +79,14 @@ def create_mock_user(user_id=None, keycloak_id=None):
     return user
 
 
+class MockEvent:
+    """Simple mock event class that allows attribute assignment."""
+    pass
+
+
 def create_mock_event(event_id=None, creator_id=None, **overrides):
     """Create a properly mocked Event object."""
-    from app.db import Event
-
-    event = Mock(spec=Event)
+    event = MockEvent()
     event.id = event_id or uuid4()
     event.creator_id = creator_id or uuid4()
     event.name = overrides.get('name', "Test Event")
@@ -99,25 +102,6 @@ def create_mock_event(event_id=None, creator_id=None, **overrides):
     event.is_cancelled = overrides.get('is_cancelled', False)
     event.created_at = datetime.now(timezone.utc)
     event.updated_at = datetime.now(timezone.utc)
-
-    # Create __dict__ for response serialization
-    event.__dict__ = {
-        'id': event.id,
-        'creator_id': event.creator_id,
-        'name': event.name,
-        'description': event.description,
-        'event_type': event.event_type,
-        'address': event.address,
-        'latitude': event.latitude,
-        'longitude': event.longitude,
-        'event_start': event.event_start,
-        'event_end': event.event_end,
-        'max_attendees': event.max_attendees,
-        'is_public': event.is_public,
-        'is_cancelled': event.is_cancelled,
-        'created_at': event.created_at,
-        'updated_at': event.updated_at,
-    }
 
     return event
 
@@ -169,7 +153,13 @@ class TestCreateEventRouteLogic:
             db.query = create_query
             db.add = Mock()
             db.commit = Mock()
-            db.refresh = Mock()
+
+            def mock_refresh(obj):
+                obj.id = uuid4()
+                obj.created_at = datetime.now(timezone.utc)
+                obj.updated_at = datetime.now(timezone.utc)
+
+            db.refresh = mock_refresh
             db.rollback = Mock()
 
             return db
