@@ -27,9 +27,9 @@ const config = getRuntimeConfig();
 
 // Keycloak configuration from environment variables
 const keycloakConfig = {
-  url: import.meta.env.VITE_KEYCLOAK_URL || 'https://keycloak.ltu-m7011e-3.se',
-  realm: import.meta.env.VITE_KEYCLOAK_REALM || 'crewup',
-  clientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'crewup-test',
+  url: config.VITE_KEYCLOAK_URL,
+  realm: config.VITE_KEYCLOAK_REALM,
+  clientId: config.VITE_KEYCLOAK_CLIENT_ID,
 };
 
 // Initialize Keycloak instance
