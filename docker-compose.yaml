@@ -27,6 +27,11 @@ services:
       context: ./event
       dockerfile: Dockerfile
     container_name: crewup-event
+    environment:
+      DATABASE_URL: postgresql://crewup:crewup_dev_password@crewup-db:5432/crewup
+      KEYCLOAK_SERVER_URL: https://keycloak.ltu-m7011e-3.se
+      KEYCLOAK_REALM: crewup
+      KEYCLOAK_CLIENT_ID: crewup-frontend
     ports:
       - "8001:8000"
     networks:

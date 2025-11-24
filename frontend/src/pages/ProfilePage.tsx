@@ -6,14 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { 
-  User as UserIcon, 
-  Mail, 
-  Edit2, 
-  Save, 
-  X, 
-  Star, 
-  LogOut, 
+import {
+  User as UserIcon,
+  Mail,
+  Edit2,
+  Save,
+  X,
+  Star,
+  LogOut,
   Award,
   Moon,
   Sun,
@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import UserEventsSection from '@/components/UserEventsSection';
 
 export default function ProfilePage() {
   const { logout } = useAuthStore();
@@ -315,8 +316,8 @@ export default function ProfilePage() {
                         maxLength={50}
                         disabled={interests.length >= 10}
                       />
-                      <Button 
-                        onClick={handleAddInterest} 
+                      <Button
+                        onClick={handleAddInterest}
                         size="sm"
                         disabled={!interestInput.trim() || interests.length >= 10}
                       >
@@ -325,9 +326,9 @@ export default function ProfilePage() {
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {interests.map((interest) => (
-                        <Badge 
-                          key={interest} 
-                          variant="secondary" 
+                        <Badge
+                          key={interest}
+                          variant="secondary"
                           className="px-3 py-1 text-sm cursor-pointer hover:bg-destructive hover:text-destructive-foreground"
                           onClick={() => handleRemoveInterest(interest)}
                         >
@@ -354,6 +355,9 @@ export default function ProfilePage() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Created Events Section */}
+            {user && <UserEventsSection userId={user.id} />}
           </div>
 
           {/* Sidebar */}

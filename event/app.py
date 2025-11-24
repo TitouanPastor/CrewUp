@@ -1,11 +1,16 @@
-from fastapi import FastAPI
+"""
+Development entry point for Event Service.
 
-app = FastAPI()
+Run with: python app.py
+For production, use: uvicorn app.main:app
+"""
+import uvicorn
 
-@app.get("/")
-async def root():
-    return {"service": "event", "status": "running"}
-
-@app.get("/health")
-async def health():
-    return {"status": "healthy"}
+if __name__ == "__main__":
+    uvicorn.run(
+        "app.main:app",
+        host="0.0.0.0",
+        port=8001,
+        reload=True,
+        log_level="info"
+    )
