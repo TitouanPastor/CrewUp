@@ -27,6 +27,10 @@ spec:
         env:
         - name: SERVICE_NAME
           value: {{ $serviceName }}
+        - name: KEYCLOAK_SERVER_URL
+          value: "{{ $.Values.keycloak.url }}"
+        - name: KEYCLOAK_REALM
+          value: "{{ $.Values.keycloak.realm }}"
         {{- if $.Values.postgres.enabled }}
         # Database connection environment variables
         - name: POSTGRES_HOST

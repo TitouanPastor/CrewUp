@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: smtp
+  labels:
+    app: smtp
+spec:
+  replicas: {{ .Values.smtp.replicas }}
+  selector:
+    matchLabels:
+      app: smtp
+  template:
+    metadata:
+      labels:
+        app: smtp
+    spec:
+      containers:
+      - name: postfix
+        image: {{ .Values.smtp.image }}
+        imagePullPolicy: Always
+        env:
+        - name: HOSTNAME
+          value: {{ .Values.smtp.hostname | quote }}
+        - name: DOMAIN
+          value: {{ .Values.smtp.domain | quote }}
+        {{- if .Values.smtp.relayhost }}
+        - name: RELAYHOST
+          value: {{ .Values.smtp.relayhost | quote }}
+        {{- end }}
+        {{- if .Values.smtp.relayUsername }}
+        - name: RELAYHOST_USERNAME
+          value: {{ .Values.smtp.relayUsername | quote }}
+        - name: RELAYHOST_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: smtp-relay-secret
+              key: password
+        {{- end }}
+        ports:
+        - name: smtp
+          containerPort: 25
+          protocol: TCP
+        - name: submission
+          containerPort: 587
+          protocol: TCP
+        livenessProbe:
+          tcpSocket:
+            port: smtp
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: smtp
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        resources:
+          {{- toYaml .Values.smtp.resources | nindent 10 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: smtp
+  labels:
+    app: smtp
+spec:
+  type: ClusterIP
+  ports:
+  - name: smtp
+    port: 25
+    targetPort: smtp
+    protocol: TCP
+  - name: submission
+    port: 587
+    targetPort: submission
+    protocol: TCP
+  selector:
+    app: smtp
