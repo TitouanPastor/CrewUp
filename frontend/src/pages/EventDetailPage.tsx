@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -25,8 +24,12 @@ export default function EventDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // ✅ new loading strategy
   const [event, setEvent] = useState<Event | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [reloading, setReloading] = useState(false);
+
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [groupsRefreshKey, setGroupsRefreshKey] = useState(0);
   const [groupsCount, setGroupsCount] = useState(0);
@@ -34,7 +37,19 @@ export default function EventDetailPage() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [editForm, setEditForm] = useState({
+  const [activeTab, setActiveTab] = useState('about');
+
+  const [editForm, setEditForm] = useState<{
+    name: string;
+    description: string;
+    event_type: 'bar' | 'club' | 'concert' | 'party' | 'restaurant' | 'outdoor' | 'sports' | 'other';
+    address: string;
+    latitude: string;
+    longitude: string;
+    event_start: string;
+    event_end: string;
+    max_attendees: string;
+  }>({
     name: '',
     description: '',
     event_type: 'other',
@@ -46,261 +61,165 @@ export default function EventDetailPage() {
     max_attendees: '',
   });
 
+  // ✅ initial load only — prevents flicker
   useEffect(() => {
-    if (id) {
-      loadEvent();
-      loadGroupsCount();
-      loadCurrentUser();
-    }
+    if (!id) return;
+
+    const loadInitial = async () => {
+      try {
+        setInitialLoading(true);
+
+        const [eventData, groupsData, user] = await Promise.all([
+          eventService.getEvent(id),
+          groupService.listGroups(id),
+          userService.getMe(),
+        ]);
+
+        setEvent(eventData);
+        setGroupsCount(groupsData.total);
+        setCurrentUserId(user.id);
+      } catch (error) {
+        console.error('Failed to load event:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load event details. Please try again later.",
+          variant: "destructive",
+        });
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+
+    loadInitial();
   }, [id]);
 
-  useEffect(() => {
-    if (id) {
-      loadGroupsCount();
+  // ✅ background soft refresh — no flicker
+  const reloadEvent = async () => {
+    if (!id) return;
+    try {
+      setReloading(true);
+      const data = await eventService.getEvent(id);
+      setEvent(data);
+    } catch (err) {
+      console.error('Failed to refresh event:', err);
+    } finally {
+      setReloading(false);
     }
-  }, [groupsRefreshKey]);
+  };
 
-  // Initialize edit form when entering edit mode
+  // ✅ refresh groups only when needed
   useEffect(() => {
-    if (isEditMode && event) {
-      const formatDateForInput = (dateString: string) => {
-        const date = new Date(dateString);
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        const hours = String(date.getHours()).padStart(2, '0');
-        const minutes = String(date.getMinutes()).padStart(2, '0');
-        return `${year}-${month}-${day}T${hours}:${minutes}`;
-      };
+    if (!id) return;
 
-      setEditForm({
-        name: event.name,
-        description: event.description || '',
-        event_type: event.event_type || 'other',
-        address: event.address,
-        latitude: event.latitude?.toString() || '',
-        longitude: event.longitude?.toString() || '',
-        event_start: formatDateForInput(event.event_start),
-        event_end: event.event_end ? formatDateForInput(event.event_end) : '',
-        max_attendees: event.max_attendees?.toString() || '',
-      });
-    }
+    const fetchGroups = async () => {
+      try {
+        const data = await groupService.listGroups(id);
+        setGroupsCount(data.total);
+      } catch (err) {
+        console.error('Failed to load groups count:', err);
+      }
+    };
+
+    fetchGroups();
+  }, [groupsRefreshKey, id]);
+
+  // ✅ hydrate edit form when switching modes
+  useEffect(() => {
+    if (!isEditMode || !event) return;
+
+    const formatDateForInput = (dateString: string) => {
+      const date = new Date(dateString);
+      return date.toISOString().slice(0, 16);
+    };
+
+    setEditForm({
+      name: event.name,
+      description: event.description || '',
+      event_type: event.event_type || 'other',
+      address: event.address,
+      latitude: event.latitude?.toString() || '',
+      longitude: event.longitude?.toString() || '',
+      event_start: formatDateForInput(event.event_start),
+      event_end: event.event_end ? formatDateForInput(event.event_end) : '',
+      max_attendees: event.max_attendees?.toString() || '',
+    });
   }, [isEditMode, event]);
 
-  const loadEvent = async () => {
-    try {
-      setLoading(true);
-      const data = await eventService.getEvent(id!);
-      setEvent(data);
-    } catch (error) {
-      console.error('Failed to load event:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load event details. Please try again later.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadGroupsCount = async () => {
-    try {
-      const data = await groupService.listGroups(id!);
-      setGroupsCount(data.total);
-    } catch (error) {
-      console.error('Failed to load groups count:', error);
-    }
-  };
-
-  const loadCurrentUser = async () => {
-    try {
-      const user = await userService.getMe();
-      setCurrentUserId(user.id);
-    } catch (error) {
-      console.error('Failed to load current user:', error);
-    }
-  };
-
+  // ✅ RSVP — already optimistically correct, just swap loadEvent → reloadEvent
   const handleRSVP = async (status: 'going' | 'interested') => {
+    if (!event) return;
+
+    const previous = structuredClone(event);
+
+    let going = event.participant_count || 0;
+    let interested = event.interested_count || 0;
+
+    if (event.user_status === 'going') going--;
+    if (event.user_status === 'interested') interested--;
+
+    if (status === 'going') going++;
+    if (status === 'interested') interested++;
+
+    setEvent({ ...event, user_status: status, participant_count: going, interested_count: interested });
+
     try {
       await eventService.joinEvent(id!, status);
-      toast({
-        title: "Success",
-        description: `You are now marked as ${status}!`,
-      });
-      // Reload event to get updated counts and user status
-      loadEvent();
-    } catch (error) {
-      console.error('Failed to RSVP:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update your RSVP. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleCancelEvent = async () => {
-    if (!window.confirm('Are you sure you want to cancel this event?')) {
-      return;
-    }
-
-    try {
-      setIsCancelling(true);
-      await eventService.updateEvent(id!, { is_cancelled: true });
-      toast({
-        title: "Event Cancelled",
-        description: "This event has been marked as cancelled.",
-      });
-      // Reload event to show updated status
-      await loadEvent();
-      setIsEditMode(false);
-    } catch (error) {
-      console.error('Failed to cancel event:', error);
-      toast({
-        title: "Error",
-        description: "Failed to cancel event. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsCancelling(false);
-    }
-  };
-
-  const handleUncancelEvent = async () => {
-    if (!window.confirm('Are you sure you want to un-cancel this event?')) {
-      return;
-    }
-
-    try {
-      setIsCancelling(true);
-      await eventService.updateEvent(id!, { is_cancelled: false });
-      toast({
-        title: "Event Restored",
-        description: "This event has been restored and is no longer cancelled.",
-      });
-      // Reload event to show updated status
-      await loadEvent();
-      setIsEditMode(false);
-    } catch (error: any) {
-      console.error('Failed to un-cancel event:', error);
-      toast({
-        title: "Error",
-        description: error.response?.data?.detail || "Failed to restore event. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsCancelling(false);
+      reloadEvent(); // ✅ smooth refresh
+    } catch {
+      setEvent(previous);
+      toast({ title: "Error", description: "Failed to update RSVP.", variant: "destructive" });
     }
   };
 
   const handleLeaveEvent = async () => {
+    if (!event) return;
+
+    const previous = structuredClone(event);
+
+    let going = event.participant_count || 0;
+    let interested = event.interested_count || 0;
+
+    if (event.user_status === 'going') going--;
+    if (event.user_status === 'interested') interested--;
+
+    setEvent({ ...event, user_status: null, participant_count: going, interested_count: interested });
+
     try {
       await eventService.leaveEvent(id!);
-      toast({
-        title: "RSVP Removed",
-        description: "You are no longer attending this event.",
-      });
-      // Reload event to get updated counts and user status
-      loadEvent();
-    } catch (error) {
-      console.error('Failed to leave event:', error);
-      toast({
-        title: "Error",
-        description: "Failed to remove your RSVP. Please try again.",
-        variant: "destructive",
-      });
+      reloadEvent();
+    } catch {
+      setEvent(previous);
+      toast({ title: "Error", description: "Failed to update RSVP.", variant: "destructive" });
     }
   };
 
+  // ✅ editing — remove flicker, keep smooth UI
   const handleSaveChanges = async () => {
     if (!event) return;
 
-    // Validation
-    if (!editForm.name.trim()) {
-      toast({
-        title: 'Name required',
-        description: 'Please enter an event name',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (!editForm.address.trim()) {
-      toast({
-        title: 'Address required',
-        description: 'Please enter an event address',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (!editForm.event_start) {
-      toast({
-        title: 'Start time required',
-        description: 'Please select an event start time',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (!editForm.event_end) {
-      toast({
-        title: 'End time required',
-        description: 'Please select an event end time',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    // Validate end time is after start time
-    if (new Date(editForm.event_end) <= new Date(editForm.event_start)) {
-      toast({
-        title: 'Invalid time range',
-        description: 'End time must be after start time',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    // Validate latitude/longitude pair
-    if ((editForm.latitude && !editForm.longitude) || (!editForm.latitude && editForm.longitude)) {
-      toast({
-        title: 'Invalid coordinates',
-        description: 'Both latitude and longitude must be provided together',
-        variant: 'destructive',
-      });
-      return;
-    }
-
     try {
       setIsSaving(true);
+
       await eventService.updateEvent(id!, {
         name: editForm.name.trim(),
         description: editForm.description.trim() || undefined,
-        event_type: editForm.event_type as any,
+        event_type: editForm.event_type,
         address: editForm.address.trim(),
-        latitude: editForm.latitude ? parseFloat(editForm.latitude) : undefined,
-        longitude: editForm.longitude ? parseFloat(editForm.longitude) : undefined,
+        latitude: editForm.latitude ? Number(editForm.latitude) : undefined,
+        longitude: editForm.longitude ? Number(editForm.longitude) : undefined,
         event_start: new Date(editForm.event_start).toISOString(),
-        event_end: new Date(editForm.event_end).toISOString(),
-        max_attendees: editForm.max_attendees ? parseInt(editForm.max_attendees) : null,
+        event_end: editForm.event_end ? new Date(editForm.event_end).toISOString() : undefined,
+        max_attendees: editForm.max_attendees ? Number(editForm.max_attendees) : null,
       });
 
-      toast({
-        title: "Changes Saved",
-        description: "Event has been updated successfully.",
-      });
+      toast({ title: "Changes Saved", description: "Event updated successfully." });
 
-      // Reload event to show updated data
-      await loadEvent();
+      reloadEvent(); // ✅ instead of loadEvent()
       setIsEditMode(false);
     } catch (error: any) {
-      console.error('Failed to update event:', error);
       toast({
         title: "Error",
-        description: error.response?.data?.detail || "Failed to update event. Please try again.",
+        description: error.response?.data?.detail || "Failed to update event.",
         variant: "destructive",
       });
     } finally {
@@ -308,13 +227,38 @@ export default function EventDetailPage() {
     }
   };
 
-  const handleGroupCreated = () => {
-    setGroupsRefreshKey((prev) => prev + 1);
+  const handleCancelEvent = async () => {
+    if (!confirm("Are you sure?")) return;
+
+    try {
+      setIsCancelling(true);
+      await eventService.updateEvent(id!, { is_cancelled: true });
+      reloadEvent();
+      setIsEditMode(false);
+    } finally {
+      setIsCancelling(false);
+    }
   };
+
+  const handleUncancelEvent = async () => {
+    if (!confirm("Restore event?")) return;
+
+    try {
+      setIsCancelling(true);
+      await eventService.updateEvent(id!, { is_cancelled: false });
+      reloadEvent();
+      setIsEditMode(false);
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  const handleGroupCreated = () => setGroupsRefreshKey(k => k + 1);
 
   const isCreator = currentUserId && event && currentUserId === event.creator_id;
 
-  if (loading) {
+  // ✅ only show full-screen spinner on first load
+  if (initialLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
@@ -331,95 +275,106 @@ export default function EventDetailPage() {
     );
   }
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric'
-    });
-  };
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
+  const formatTime = (dateString: string) =>
+    new Date(dateString).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 
   const handleShare = () => {
     if (navigator.share) {
-      navigator.share({
-        title: event.name,
-        text: event.description,
-        url: window.location.href,
-      });
+      navigator.share({ title: event.name, text: event.description, url: window.location.href });
     } else {
       navigator.clipboard.writeText(window.location.href);
-      toast({
-        title: "Link copied!",
-        description: "Event link copied to clipboard",
-      });
+      toast({ title: "Link copied!", description: "Event link copied to clipboard" });
     }
   };
 
   return (
     <div>
-      <div className="max-w-5xl mx-auto px-4 md:px-6 py-6 space-y-6">
-        {/* Back Button */}
-        <Button
-          variant="ghost"
-          onClick={() => navigate('/events')}
-          className="gap-2 -ml-2"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back
-        </Button>
-
-        {/* Event Header */}
-        <div className="space-y-4">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1 space-y-3">
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="capitalize text-sm">
+      {/* Background refresh indicator */}
+      {reloading && (
+        <div className="fixed top-0 md:top-16 left-0 right-0 h-[2px] bg-primary animate-pulse z-[9999]" />
+      )}
+      {/* Sticky Header with Event Info + Tabs */}
+      <div className="relative">
+        <div className="fixed top-0 md:top-16 inset-x-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+          <div className="max-w-5xl mx-auto px-4 md:px-6">
+            {/* Top row: Back, Title, Type, Actions */}
+            <div className="flex items-center justify-between gap-3 pt-3">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate('/events')}
+                  className="flex-shrink-0 h-8 w-8 p-0"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                </Button>
+                <h1 className="font-semibold truncate text-sm md:text-base">{event.name}</h1>
+                <Badge variant="secondary" className="capitalize text-xs flex-shrink-0">
                   {event.event_type}
                 </Badge>
-                {event.is_cancelled && (
-                  <Badge variant="destructive" className="text-sm">
-                    Cancelled
-                  </Badge>
-                )}
               </div>
-              <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
-                {event.name}
-              </h1>
-            </div>
-            <div className="flex gap-2">
-              {isCreator && (
+
+              <div className="flex items-center gap-1 flex-shrink-0">
+                {isCreator && (
+                  <Button
+                    variant={isEditMode ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setIsEditMode(!isEditMode)}
+                    className="h-8 w-8 p-0"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                )}
                 <Button
-                  variant={isEditMode ? "default" : "outline"}
-                  size="icon"
-                  onClick={() => setIsEditMode(!isEditMode)}
-                  className="flex-shrink-0"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleShare}
+                  className="h-8 w-8 p-0"
                 >
-                  <Edit className="w-4 h-4" />
+                  <Share2 className="w-4 h-4" />
                 </Button>
-              )}
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handleShare}
-                className="flex-shrink-0"
+              </div>
+            </div>
+
+            {/* Bottom row: Tabs */}
+            <div className="flex gap-6 -mb-px">
+              <button
+                onClick={() => setActiveTab('about')}
+                className={`py-3 px-1 text-sm font-medium border-b-2 transition-colors ${activeTab === 'about'
+                  ? 'border-primary text-foreground'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
+                  }`}
               >
-                <Share2 className="w-4 h-4" />
-              </Button>
+                About
+              </button>
+              <button
+                onClick={() => setActiveTab('groups')}
+                className={`py-3 px-1 text-sm font-medium border-b-2 transition-colors ${activeTab === 'groups'
+                  ? 'border-primary text-foreground'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
+                  }`}
+              >
+                Groups ({groupsCount})
+              </button>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div className="max-w-5xl mx-auto px-4 md:px-6 pt-28 md:pt-28 pb-6 space-y-6">
+        {/* Event Header - Full version for initial context */}
+        <div className="space-y-4">
+          {event.is_cancelled && (
+            <Badge variant="destructive" className="text-sm">
+              Cancelled
+            </Badge>
+          )}
 
           {/* Quick Stats */}
-          <div className="flex items-center gap-6 text-sm text-muted-foreground">
+          <div className="flex items-center gap-6 text-sm text-muted-foreground flex-wrap">
             <div className="flex items-center gap-2">
               <Users className="w-4 h-4 text-primary" />
               <span className="font-medium">{event.participant_count} going</span>
@@ -438,13 +393,9 @@ export default function EventDetailPage() {
         <div className="grid md:grid-cols-3 gap-6">
           {/* Main Content */}
           <div className="md:col-span-2">
-            <Tabs defaultValue="about" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="about">About</TabsTrigger>
-                <TabsTrigger value="groups">Groups ({groupsCount})</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="about" className="space-y-6 mt-6">
+            {/* About Tab */}
+            {activeTab === 'about' && (
+              <div className="space-y-6">
                 {/* Edit Form */}
                 {isEditMode && isCreator && (
                   <Card>
@@ -477,7 +428,7 @@ export default function EventDetailPage() {
                           <Label htmlFor="edit-event-type">Event Type</Label>
                           <Select
                             value={editForm.event_type}
-                            onValueChange={(value) => setEditForm({ ...editForm, event_type: value })}
+                            onValueChange={(value) => setEditForm({ ...editForm, event_type: value as typeof editForm.event_type })}
                           >
                             <SelectTrigger>
                               <SelectValue />
@@ -678,9 +629,12 @@ export default function EventDetailPage() {
                     </CardContent>
                   </Card>
                 )}
-              </TabsContent>
+              </div>
+            )}
 
-              <TabsContent value="groups" className="space-y-4 mt-6">
+            {/* Groups Tab */}
+            {activeTab === 'groups' && (
+              <div className="space-y-4">
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h3 className="text-lg font-semibold">Event Groups</h3>
@@ -695,8 +649,8 @@ export default function EventDetailPage() {
                 </div>
 
                 <GroupList eventId={id!} onRefresh={groupsRefreshKey} />
-              </TabsContent>
-            </Tabs>
+              </div>
+            )}
           </div>
 
           {/* Sidebar */}

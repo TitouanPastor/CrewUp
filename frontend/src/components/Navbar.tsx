@@ -23,7 +23,7 @@ export default function Navbar() {
   const handleAlertStart = () => {
     setIsLongPressing(true);
     let currentProgress = 0;
-    
+
     progressInterval.current = window.setInterval(() => {
       currentProgress += 5;
       setProgress(currentProgress);
@@ -60,16 +60,16 @@ export default function Navbar() {
   ];
 
   return (
-    <nav className="hidden md:block bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border sticky top-0 z-50">
+    <nav className="hidden md:block fixed top-0 inset-x-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3 group">
             <div className="relative">
-              <img 
-                src="/icon_transparent.png" 
-                alt="CrewUp" 
-                className="h-9 w-9 rounded-xl transition-transform group-hover:scale-105" 
+              <img
+                src="/icon_transparent.png"
+                alt="CrewUp"
+                className="h-9 w-9 rounded-xl transition-transform group-hover:scale-105"
               />
             </div>
             <span className="text-xl font-semibold text-foreground tracking-tight">CrewUp</span>
@@ -81,17 +81,16 @@ export default function Navbar() {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex items-center gap-2 px-4 h-9 rounded-lg transition-all font-medium text-sm ${
-                  isActive(item.path)
-                    ? 'text-primary bg-primary/10'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-                }`}
+                className={`flex items-center gap-2 px-4 h-9 rounded-lg transition-all font-medium text-sm ${isActive(item.path)
+                  ? 'text-primary bg-primary/10'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                  }`}
               >
                 <item.icon className="w-4 h-4" />
                 <span>{item.label}</span>
               </Link>
             ))}
-            
+
             {/* Alert Button */}
             <Button
               variant={isPartyMode ? "destructive" : "outline"}
@@ -103,9 +102,9 @@ export default function Navbar() {
               onTouchEnd={handleAlertEnd}
               className="relative overflow-hidden ml-2"
             >
-              <div 
+              <div
                 className="absolute inset-0 bg-destructive/30 transition-all"
-                style={{ 
+                style={{
                   width: `${progress}%`,
                   opacity: isLongPressing ? 1 : 0
                 }}

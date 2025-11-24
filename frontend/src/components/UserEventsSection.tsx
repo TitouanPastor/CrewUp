@@ -125,49 +125,49 @@ export default function UserEventsSection({ userId }: UserEventsSectionProps) {
               <div
                 key={event.id}
                 onClick={() => handleEventClick(event.id)}
-                className="p-4 rounded-lg border bg-card hover:bg-accent transition-colors cursor-pointer group"
+                className="p-3 md:p-4 rounded-lg border bg-card hover:bg-accent transition-colors cursor-pointer group"
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start gap-2 mb-2">
-                      <h3 className="font-semibold text-sm group-hover:text-primary transition-colors truncate">
-                        {event.name}
-                      </h3>
-                      <div className="flex gap-1 flex-shrink-0">
-                        <Badge
-                          variant="secondary"
-                          className="text-xs capitalize"
-                        >
-                          {event.event_type}
+                <div className="space-y-2">
+                  {/* Title and badges */}
+                  <div className="flex items-start gap-2 flex-wrap">
+                    <h3 className="font-semibold text-sm group-hover:text-primary transition-colors min-w-0 line-clamp-1 flex-1">
+                      {event.name}
+                    </h3>
+                    <div className="flex gap-1 flex-shrink-0">
+                      <Badge
+                        variant="secondary"
+                        className="text-xs capitalize whitespace-nowrap"
+                      >
+                        {event.event_type}
+                      </Badge>
+                      {event.is_cancelled && (
+                        <Badge variant="destructive" className="text-xs whitespace-nowrap">
+                          Cancelled
                         </Badge>
-                        {event.is_cancelled && (
-                          <Badge variant="destructive" className="text-xs">
-                            Cancelled
-                          </Badge>
-                        )}
-                      </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Event details */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-start gap-2 text-xs text-muted-foreground">
+                      <Calendar className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                      <span className="break-words">{formatDate(event.event_start)} at {formatTime(event.event_start)}</span>
                     </div>
 
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Calendar className="w-3 h-3" />
-                        <span>{formatDate(event.event_start)} at {formatTime(event.event_start)}</span>
-                      </div>
+                    <div className="flex items-start gap-2 text-xs text-muted-foreground">
+                      <MapPin className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                      <span className="break-words line-clamp-2">{event.address}</span>
+                    </div>
 
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <MapPin className="w-3 h-3" />
-                        <span className="truncate">{event.address}</span>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+                      <div className="flex items-center gap-1 whitespace-nowrap">
+                        <Users className="w-3 h-3" />
+                        <span>{event.participant_count} going</span>
                       </div>
-
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Users className="w-3 h-3" />
-                          <span>{event.participant_count} going</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Heart className="w-3 h-3" />
-                          <span>{event.interested_count} interested</span>
-                        </div>
+                      <div className="flex items-center gap-1 whitespace-nowrap">
+                        <Heart className="w-3 h-3" />
+                        <span>{event.interested_count} interested</span>
                       </div>
                     </div>
                   </div>
