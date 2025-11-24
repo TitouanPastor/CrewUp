@@ -31,7 +31,7 @@ services:
     enabled: true
     replicas: 1
     port: 8000
-    imageTag: "latest"  # Auto-updated by CI/CD
+    imageTag: "c2691ac"
     
   group:
     enabled: true
@@ -62,7 +62,7 @@ frontend:
   enabled: true
   replicas: 1
   port: 80
-  imageTag: "3c91201"
+  imageTag: "c2691ac"
   image: crewup-frontend
 
 # Ingress Settings
