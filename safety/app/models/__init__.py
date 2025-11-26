@@ -1,10 +1,20 @@
 """
 Pydantic models for Safety Service.
 """
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 from typing import Optional
 from datetime import datetime
 from uuid import UUID
+from enum import Enum
+
+
+# ==================== Enums ====================
+
+class AlertType(str, Enum):
+    """Valid alert types."""
+    HELP = "help"
+    EMERGENCY = "emergency"
+    OTHER = "other"
 
 
 # ==================== Safety Alert Models ====================
@@ -17,6 +27,15 @@ class SafetyAlertCreate(BaseModel):
     longitude: Optional[float] = Field(None, description="User's current longitude", ge=-180, le=180)
     alert_type: str = Field("help", description="Type of alert: help, emergency, other")
     message: Optional[str] = Field(None, description="Optional message", max_length=500)
+    
+    @field_validator("alert_type")
+    @classmethod
+    def validate_alert_type(cls, v: str) -> str:
+        """Validate alert type is one of the allowed values."""
+        valid_types = {t.value for t in AlertType}
+        if v not in valid_types:
+            raise ValueError(f"Invalid alert type. Must be one of: {', '.join(valid_types)}")
+        return v
     
     model_config = ConfigDict(
         json_schema_extra={

@@ -1,5 +1,6 @@
 """
-FastAPI application setup and configuration.
+Safety Service - FastAPI application.
+Emergency alert system for CrewUp events.
 """
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,12 +22,12 @@ logger = setup_logging(log_level=config.LOG_LEVEL)
 
 # Create FastAPI app
 app = FastAPI(
-    title="CrewUp Safety Service",
-    description="Emergency alerts and safety features for events",
+    title="Safety Service",
+    description="Emergency alerts for CrewUp events",
     version="1.0.0",
-    docs_url="/api/v1/alerts/docs",
-    redoc_url="/api/v1/alerts/redoc",
-    openapi_url="/api/v1/alerts/openapi.json"
+    docs_url="/api/v1/safety/docs",
+    redoc_url="/api/v1/safety/redoc",
+    openapi_url="/api/v1/safety/openapi.json"
 )
 
 # CORS middleware
@@ -47,45 +48,23 @@ app.add_exception_handler(Exception, generic_exception_handler)
 app.include_router(alerts_router, prefix="/api/v1")
 
 
-# Health check endpoint
 @app.get("/health", tags=["health"])
 async def health_check():
-    """Health check endpoint."""
-    return {
-        "status": "healthy",
-        "service": "safety",
-        "version": "1.0.0"
-    }
+    """Service health check."""
+    return {"status": "healthy", "service": "safety", "version": "1.0.0"}
 
 
-# Startup event
 @app.on_event("startup")
 async def startup_event():
-    """Log application startup."""
+    """Log startup info."""
     db_url = config.get_database_url()
-    # Hide password in logs
-    if '@' in db_url:
-        db_info = db_url.split('@')[1]
-    else:
-        db_info = "in-memory" if "sqlite" in db_url else db_url
+    db_info = db_url.split('@')[1] if '@' in db_url else "in-memory"
     logger.info(f"Safety Service starting on {db_info}")
-    logger.info(f"Keycloak server: {config.KEYCLOAK_SERVER_URL}")
-    logger.info(f"CORS origins: {config.CORS_ORIGINS}")
+    logger.info(f"Keycloak: {config.KEYCLOAK_SERVER_URL}/realms/{config.KEYCLOAK_REALM}")
 
 
-# Shutdown event
 @app.on_event("shutdown")
 async def shutdown_event():
-    """Log application shutdown."""
+    """Log shutdown."""
     logger.info("Safety Service shutting down")
 
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(
-        "app.main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True,
-        log_level="info"
-    )

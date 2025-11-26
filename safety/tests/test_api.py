@@ -114,7 +114,7 @@ class TestCreateAlert:
         assert "member" in response.json()["detail"].lower()
 
     def test_create_alert_invalid_type(self, client, mock_user, mock_group, mock_group_member, mock_current_user):
-        """Test creating alert with invalid type."""
+        """Test creating alert with invalid alert type."""
         response = client.post(
             "/api/v1/safety",
             json={
@@ -126,8 +126,8 @@ class TestCreateAlert:
             headers={"Authorization": "Bearer mock-token"}
         )
 
-        # SafetyException returns 400 for invalid alert type
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        # Pydantic validation error returns 422
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
     def test_create_alert_invalid_coordinates(self, client, mock_user, mock_group, mock_group_member, mock_current_user):
         """Test creating alert with invalid coordinates."""

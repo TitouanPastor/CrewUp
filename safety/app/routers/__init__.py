@@ -3,9 +3,9 @@ Safety alert API endpoints.
 """
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_
-from typing import Optional, List
-from uuid import UUID
+from sqlalchemy import and_
+from typing import Optional
+from uuid import UUID, uuid4
 from datetime import datetime, timezone
 import logging
 import httpx
@@ -23,55 +23,25 @@ from app.config import config
 from app.utils import NotFoundException, BadRequestException, ForbiddenException
 
 
-class SafetyException(HTTPException):
-    """Custom exception for safety service."""
-    def __init__(self, detail: str, status_code: int = status.HTTP_400_BAD_REQUEST):
-        super().__init__(status_code=status_code, detail=detail)
-
-
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/safety", tags=["safety-alerts"])
 
 
-# ==================== Health Check ====================
-
-@router.get("/health", include_in_schema=False)
-def health_check():
-    """Health check endpoint (no authentication required)."""
-    return {
-        "status": "healthy",
-        "service": "safety",
-        "version": "1.0.0"
-    }
+class SafetyException(HTTPException):
+    """Custom exception for safety-specific errors."""
+    def __init__(self, detail: str, status_code: int = status.HTTP_400_BAD_REQUEST):
+        super().__init__(status_code=status_code, detail=detail)
 
 
 # ==================== Helper Functions ====================
 
-async def broadcast_alert_to_group(
-    group_id: UUID,
-    alert: SafetyAlert,
-    user: User
-) -> bool:
-    """
-    Broadcast safety alert to all members in a group via WebSocket.
-    
-    Makes HTTP call to group service internal endpoint.
-    
-    Args:
-        group_id: Group ID to broadcast to
-        alert: Safety alert object
-        user: User who created the alert
-        
-    Returns:
-        True if successful, False otherwise
-    """
+async def broadcast_alert_to_group(group_id: UUID, alert: SafetyAlert, user: User) -> bool:
+    """Broadcast safety alert to group members via WebSocket (internal group service call)."""
     try:
-        # Build user name
-        user_name = f"{user.first_name} {user.last_name}".strip()
-        if not user_name:
-            user_name = user.email
+        # Build user display name
+        user_name = f"{user.first_name} {user.last_name}".strip() or user.email
         
-        # Create broadcast message
+        # Create broadcast payload
         broadcast_data = AlertBroadcast(
             type="safety_alert",
             alert_id=alert.id,
@@ -84,14 +54,10 @@ async def broadcast_alert_to_group(
             created_at=alert.created_at
         )
         
-        # Send to group service
+        # Call group service
         url = f"{config.GROUP_SERVICE_URL}/api/v1/groups/internal/broadcast/{group_id}"
-        
         async with httpx.AsyncClient(timeout=5.0) as client:
-            response = await client.post(
-                url,
-                json=broadcast_data.model_dump(mode='json')
-            )
+            response = await client.post(url, json=broadcast_data.model_dump(mode='json'))
             response.raise_for_status()
         
         logger.info(f"Alert {alert.id} broadcast to group {group_id}")
@@ -108,40 +74,24 @@ async def broadcast_alert_to_group(
         return False
 
 
-def check_event_in_progress(event: Event) -> bool:
+def is_event_active(event: Event) -> bool:
     """
-    Check if an event is currently in progress.
-    
-    Args:
-        event: Event to check
-        
-    Returns:
-        True if event is in progress (between start and end time)
+    Check if event is currently active (started, not ended, not cancelled).
+    Handles both timezone-aware and naive datetimes for compatibility.
     """
     now = datetime.now(timezone.utc)
     
-    # Handle timezone-naive datetimes from SQLite (unit tests)
-    event_start = event.event_start
-    if event_start.tzinfo is None:
-        event_start = event_start.replace(tzinfo=timezone.utc)
+    # Ensure timezone-aware datetimes (SQLite compatibility)
+    start = event.event_start
+    if start.tzinfo is None:
+        start = start.replace(tzinfo=timezone.utc)
     
-    event_end = event.event_end
-    if event_end and event_end.tzinfo is None:
-        event_end = event_end.replace(tzinfo=timezone.utc)
+    end = event.event_end
+    if end and end.tzinfo is None:
+        end = end.replace(tzinfo=timezone.utc)
     
-    # Event has started
-    if event_start > now:
-        return False
-    
-    # Event has ended (if end time specified)
-    if event_end and event_end < now:
-        return False
-    
-    # Event is cancelled
-    if event.is_cancelled:
-        return False
-    
-    return True
+    # Check: started, not ended, not cancelled
+    return start <= now and (not end or end > now) and not event.is_cancelled
 
 
 # ==================== API Endpoints ====================
@@ -152,63 +102,37 @@ async def create_safety_alert(
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """
-    Create a safety alert and broadcast it to all group members.
-    
-    The alert will be sent to all members of the specified group via WebSocket
-    if the associated event is currently in progress.
-    
-    Requires authentication and group membership.
-    """
+    """Create and broadcast safety alert to group members."""
     try:
-        # 1. Get user from database
+        # Get user profile
         user = db.query(User).filter(User.keycloak_id == current_user["keycloak_id"]).first()
         if not user:
-            raise SafetyException(
-                "User profile not found. Please complete your profile first.",
-                status.HTTP_404_NOT_FOUND
-            )
+            raise SafetyException("User profile not found. Complete your profile first.", status.HTTP_404_NOT_FOUND)
         
-        # 2. Validate group exists
+        # Validate group exists
         group = db.query(Group).filter(Group.id == alert_data.group_id).first()
         if not group:
             raise NotFoundException("Group not found")
         
-        # 3. Check user is member of the group
+        # Check user is group member
         is_member = db.query(GroupMember).filter(
-            and_(
-                GroupMember.group_id == alert_data.group_id,
-                GroupMember.user_id == user.id
-            )
+            and_(GroupMember.group_id == alert_data.group_id, GroupMember.user_id == user.id)
         ).first()
         
         if not is_member:
-            raise SafetyException(
-                "You must be a member of this group to send alerts",
-                status.HTTP_403_FORBIDDEN
-            )
+            raise SafetyException("You must be a member of this group to send alerts", status.HTTP_403_FORBIDDEN)
         
-        # 4. Check if event is in progress
+        # Check event is active
         event = db.query(Event).filter(Event.id == group.event_id).first()
         if not event:
             raise NotFoundException("Associated event not found")
         
-        if not check_event_in_progress(event):
-            raise SafetyException(
-                "Safety alerts can only be sent during active events",
-                status.HTTP_400_BAD_REQUEST
-            )
+        if not is_event_active(event):
+            raise SafetyException("Safety alerts can only be sent during active events", status.HTTP_400_BAD_REQUEST)
         
-        # 5. Validate alert type
-        valid_alert_types = ["help", "emergency", "other"]
-        if alert_data.alert_type not in valid_alert_types:
-            raise SafetyException(
-                f"Invalid alert type. Must be one of: {', '.join(valid_alert_types)}",
-                status.HTTP_400_BAD_REQUEST
-            )
-        
-        # 6. Create safety alert
+        # Create alert
         alert = SafetyAlert(
+            id=uuid4(),
             user_id=user.id,
             group_id=alert_data.group_id,
             latitude=alert_data.latitude,
@@ -222,12 +146,11 @@ async def create_safety_alert(
         db.commit()
         db.refresh(alert)
         
-        logger.info(f"Safety alert {alert.id} created by user {user.id} in group {alert_data.group_id}")
+        logger.info(f"Alert {alert.id} created by user {user.id} in group {alert_data.group_id}")
         
-        # 7. Broadcast alert to all group members via WebSocket
+        # Broadcast to group via WebSocket
         await broadcast_alert_to_group(alert_data.group_id, alert, user)
         
-        # 8. Return response with user details
         return SafetyAlertResponse.from_orm_with_user(alert, user)
         
     except (NotFoundException, BadRequestException, ForbiddenException, SafetyException, HTTPException):
@@ -250,25 +173,16 @@ async def list_safety_alerts(
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """
-    List safety alerts.
-    
-    Returns alerts for groups the user is a member of.
-    Can filter by group ID and resolved status.
-    """
+    """List safety alerts (groups user is member of)."""
     try:
-        # Get user from database
+        # Get user
         user = db.query(User).filter(User.keycloak_id == current_user["keycloak_id"]).first()
         if not user:
             raise NotFoundException("User profile not found")
         
-        # Build query - only show alerts from groups user is member of
+        # Query alerts from user's groups
         query = db.query(SafetyAlert).join(
-            GroupMember,
-            and_(
-                GroupMember.group_id == SafetyAlert.group_id,
-                GroupMember.user_id == user.id
-            )
+            GroupMember, and_(GroupMember.group_id == SafetyAlert.group_id, GroupMember.user_id == user.id)
         )
         
         # Apply filters
@@ -276,22 +190,16 @@ async def list_safety_alerts(
             query = query.filter(SafetyAlert.group_id == group_id)
         
         if resolved is not None:
-            if resolved:
-                query = query.filter(SafetyAlert.resolved_at.isnot(None))
-            else:
-                query = query.filter(SafetyAlert.resolved_at.is_(None))
+            query = query.filter(
+                SafetyAlert.resolved_at.isnot(None) if resolved else SafetyAlert.resolved_at.is_(None)
+            )
         
-        # Get total count
+        # Get total and fetch with pagination
         total = query.count()
-        
-        # Apply pagination and ordering
         alerts = query.order_by(SafetyAlert.created_at.desc()).offset(offset).limit(limit).all()
         
-        # Build responses with user details
-        responses = [SafetyAlertResponse.from_orm_with_user(alert, alert.user) for alert in alerts]
-        
         return SafetyAlertListResponse(
-            alerts=responses,
+            alerts=[SafetyAlertResponse.from_orm_with_user(alert, alert.user) for alert in alerts],
             total=total,
             limit=limit,
             offset=offset
@@ -313,11 +221,7 @@ async def get_safety_alert(
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """
-    Get a specific safety alert.
-    
-    Only accessible to members of the associated group.
-    """
+    """Get specific safety alert (group members only)."""
     try:
         # Get user
         user = db.query(User).filter(User.keycloak_id == current_user["keycloak_id"]).first()
@@ -329,21 +233,14 @@ async def get_safety_alert(
         if not alert:
             raise NotFoundException("Alert not found")
         
-        # Check user is member of the group
+        # Check group membership
         is_member = db.query(GroupMember).filter(
-            and_(
-                GroupMember.group_id == alert.group_id,
-                GroupMember.user_id == user.id
-            )
+            and_(GroupMember.group_id == alert.group_id, GroupMember.user_id == user.id)
         ).first()
         
         if not is_member:
-            raise SafetyException(
-                "Access denied. You must be a group member to view this alert.",
-                status.HTTP_403_FORBIDDEN
-            )
+            raise SafetyException("Access denied: not a group member", status.HTTP_403_FORBIDDEN)
         
-        # Build response with user details
         return SafetyAlertResponse.from_orm_with_user(alert, alert.user)
         
     except (NotFoundException, BadRequestException, ForbiddenException, SafetyException, HTTPException):
@@ -363,11 +260,7 @@ async def resolve_safety_alert(
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """
-    Mark a safety alert as resolved.
-    
-    Only group admins or the alert creator can resolve alerts.
-    """
+    """Mark alert as resolved (creator or group admin only)."""
     try:
         # Get user
         user = db.query(User).filter(User.keycloak_id == current_user["keycloak_id"]).first()
@@ -379,7 +272,7 @@ async def resolve_safety_alert(
         if not alert:
             raise NotFoundException("Alert not found")
         
-        # Check permissions (must be alert creator or group admin)
+        # Check permissions (creator or admin)
         is_creator = alert.user_id == user.id
         is_admin = db.query(GroupMember).filter(
             and_(
@@ -390,25 +283,17 @@ async def resolve_safety_alert(
         ).first()
         
         if not (is_creator or is_admin):
-            raise SafetyException(
-                "Access denied. Only the alert creator or group admins can resolve alerts.",
-                status.HTTP_403_FORBIDDEN
-            )
+            raise SafetyException("Access denied: creator or admin only", status.HTTP_403_FORBIDDEN)
         
-        # Update alert
-        if resolve_data.resolved:
-            alert.resolved_at = datetime.now(timezone.utc)
-            alert.resolved_by_user_id = user.id
-        else:
-            alert.resolved_at = None
-            alert.resolved_by_user_id = None
+        # Update alert status
+        alert.resolved_at = datetime.now(timezone.utc) if resolve_data.resolved else None
+        alert.resolved_by_user_id = user.id if resolve_data.resolved else None
         
         db.commit()
         db.refresh(alert)
         
         logger.info(f"Alert {alert_id} {'resolved' if resolve_data.resolved else 'unresolved'} by user {user.id}")
         
-        # Build response with user details
         return SafetyAlertResponse.from_orm_with_user(alert, alert.user)
         
     except (NotFoundException, BadRequestException, ForbiddenException, SafetyException, HTTPException):
