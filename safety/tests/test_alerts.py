@@ -23,7 +23,7 @@ def test_create_safety_alert_success(client, db_session, mock_user, mock_group, 
     """Test successful alert creation."""
     
     response = client.post(
-        "/api/v1/alerts",
+        "/api/v1/safety",
         json={
             "group_id": str(mock_group.id),
             "latitude": 65.584819,
@@ -61,7 +61,7 @@ def test_list_alerts_success(client, db_session, mock_user, mock_group, mock_gro
     db_session.commit()
 
     response = client.get(
-    "/api/v1/alerts",
+    "/api/v1/safety",
     headers={"Authorization": "Bearer mock-token"}
     )
 
@@ -86,7 +86,7 @@ def test_get_alert_success(client, db_session, mock_user, mock_group, mock_group
     db_session.refresh(alert)
 
     response = client.get(
-    f"/api/v1/alerts/{alert.id}",
+    f"/api/v1/safety/{alert.id}",
     headers={"Authorization": "Bearer mock-token"}
     )
 
@@ -108,7 +108,7 @@ def test_resolve_alert(client, db_session, mock_user, mock_group, mock_group_mem
     db_session.refresh(alert)
 
     response = client.patch(
-    f"/api/v1/alerts/{alert.id}/resolve",
+    f"/api/v1/safety/{alert.id}/resolve",
     json={"resolved": True},
     headers={"Authorization": "Bearer mock-token"}
     )

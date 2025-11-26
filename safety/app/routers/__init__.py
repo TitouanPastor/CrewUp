@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
 from typing import Optional, List
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 import httpx
 
@@ -30,7 +30,19 @@ class SafetyException(HTTPException):
 
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/alerts", tags=["safety-alerts"])
+router = APIRouter(prefix="/safety", tags=["safety-alerts"])
+
+
+# ==================== Health Check ====================
+
+@router.get("/health", include_in_schema=False)
+def health_check():
+    """Health check endpoint (no authentication required)."""
+    return {
+        "status": "healthy",
+        "service": "safety",
+        "version": "1.0.0"
+    }
 
 
 # ==================== Helper Functions ====================
@@ -106,14 +118,23 @@ def check_event_in_progress(event: Event) -> bool:
     Returns:
         True if event is in progress (between start and end time)
     """
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
+    
+    # Handle timezone-naive datetimes from SQLite (unit tests)
+    event_start = event.event_start
+    if event_start.tzinfo is None:
+        event_start = event_start.replace(tzinfo=timezone.utc)
+    
+    event_end = event.event_end
+    if event_end and event_end.tzinfo is None:
+        event_end = event_end.replace(tzinfo=timezone.utc)
     
     # Event has started
-    if event.event_start > now:
+    if event_start > now:
         return False
     
     # Event has ended (if end time specified)
-    if event.event_end and event.event_end < now:
+    if event_end and event_end < now:
         return False
     
     # Event is cancelled
@@ -194,7 +215,7 @@ async def create_safety_alert(
             longitude=alert_data.longitude,
             alert_type=alert_data.alert_type,
             message=alert_data.message,
-            created_at=datetime.utcnow()
+            created_at=datetime.now(timezone.utc)
         )
         
         db.add(alert)
@@ -376,7 +397,7 @@ async def resolve_safety_alert(
         
         # Update alert
         if resolve_data.resolved:
-            alert.resolved_at = datetime.utcnow()
+            alert.resolved_at = datetime.now(timezone.utc)
             alert.resolved_by_user_id = user.id
         else:
             alert.resolved_at = None

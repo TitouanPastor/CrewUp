@@ -10,6 +10,7 @@ Emergency alert and safety features service for CrewUp.
 - ✅ **Alert Resolution**: Track when issues are resolved
 - ✅ **Access Control**: Only group members can send/view alerts
 - ✅ **Event Validation**: Alerts only work during active events (between start and end time)
+- ✅ **JWT Authentication**: Keycloak-based authentication with token validation
 
 ## Architecture
 
@@ -30,7 +31,162 @@ User → Safety Service → Group Service → WebSocket → All Group Members
 - **PostgreSQL** - Database
 - **Keycloak** - Authentication
 - **httpx** - Inter-service HTTP calls
-- **pytest** - Testing (96%+ coverage goal)
+- **pytest** - Testing (68% coverage)
+- **requests** - Integration tests with real HTTP calls
+- **python-jose** - JWT token validation
+
+```
+safety/
+├── app/
+│   ├── db/                 # Database models and connection
+│   │   ├── database.py     # SQLAlchemy setup
+│   │   └── models.py       # ORM models (SafetyAlert, User, Event, Group)
+│   ├── middleware/         # Request middleware
+│   │   └── auth.py         # JWT authentication with Keycloak
+│   ├── models/             # Pydantic validation models
+│   │   └── __init__.py     # Request/response schemas
+│   ├── routers/            # API endpoints
+│   │   └── __init__.py     # Safety alert REST API
+│   ├── services/           # Business logic
+│   │   ├── alert_service.py   # Alert service client
+│   │   └── group_client.py    # Group service client
+│   ├── utils/              # Utilities
+│   │   ├── logging.py      # Structured logging
+│   │   └── exceptions.py   # Error handlers
+│   └── main.py             # FastAPI app
+├── tests/                  # Test suite
+│   ├── conftest.py         # Pytest fixtures
+│   ├── test_api.py         # Unit tests
+│   ├── test_alerts.py      # Alert tests
+│   └── test_integration_auth.py # Integration tests with real Keycloak
+├── app.py                  # Development entry point
+├── Dockerfile              # Container definition
+├── requirements.txt        # Dependencies
+└── run_tests.sh           # Test runner
+```
+
+## Getting Started
+
+### Prerequisites
+
+- Python 3.12+
+- PostgreSQL 14+
+- Keycloak (for authentication)
+
+### Installation
+
+1. Install dependencies:
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+2. Set up environment variables:
+```bash
+cp .env.test.example .env.test
+# Edit .env.test with your configuration
+```
+
+3. Run the service:
+```bash
+# Development
+python app.py
+
+# Production
+uvicorn app.main:app --host 0.0.0.0 --port 8003
+```
+
+### Docker
+
+```bash
+docker build -t crewup-safety-service .
+docker run -p 8003:8003 crewup-safety-service
+```
+
+## Testing
+
+The service has comprehensive unit and integration tests with automatic database cleanup.
+
+### Test Structure
+
+- **Unit Tests** (`test_api.py`, `test_alerts.py`): Test API layer with mocked dependencies (in-memory SQLite)
+- **Integration Tests** (`test_integration_auth.py`): Test with real Keycloak authentication and PostgreSQL database
+
+### Running Tests
+
+```bash
+# Run unit tests (default)
+./run_tests.sh
+# or
+./run_tests.sh unit
+
+# Run all tests (unit + integration, requires service running)
+./run_tests.sh all
+
+# Run only integration tests (requires running service)
+./run_tests.sh integration
+```
+
+### Unit Tests
+
+Unit tests run in isolation with mocked authentication and an in-memory SQLite database:
+
+```bash
+./run_tests.sh unit
+```
+
+**Coverage: 68%** (24 tests)
+
+Unit tests do NOT require:
+- Running service
+- PostgreSQL database
+- Real Keycloak server
+
+### Integration Tests
+
+Integration tests validate real-world scenarios with actual Keycloak authentication:
+
+1. Create `.env.test` with test credentials:
+```bash
+KEYCLOAK_SERVER_URL=https://keycloak.ltu-m7011e-3.se
+KEYCLOAK_REALM=crewup
+KEYCLOAK_CLIENT_ID=crewup-test
+TEST_USER1_EMAIL=user1@example.com
+TEST_USER1_PASSWORD=password123
+TEST_USER2_EMAIL=user2@example.com
+TEST_USER2_PASSWORD=password123
+SAFETY_SERVICE_URL=http://localhost:8003
+DATABASE_URL=postgresql://crewup:crewup_dev_password@localhost:5432/crewup
+```
+
+2. Ensure service is running:
+```bash
+# Option 1: Docker (recommended)
+docker-compose up safety
+
+# Option 2: Local development
+# In a separate terminal
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+3. Run integration tests:
+```bash
+./run_tests.sh integration
+# or run all tests (unit + integration)
+./run_tests.sh all
+```
+
+**Note:** When using Docker, the service runs on port **8004** (mapped from container port 8000). Make sure `.env.test` has:
+```bash
+SAFETY_SERVICE_URL=http://localhost:8004
+```
+
+**Features:**
+- Real JWT token acquisition from Keycloak
+- Actual HTTP requests to running service
+- PostgreSQL database validation
+- Automatic cleanup of test data after each test
 
 ## API Endpoints
 

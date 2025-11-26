@@ -70,7 +70,7 @@ spec:
       
       {{- if .Values.services.safety.enabled }}
       # Safety service API
-      - path: /api/v1/alerts
+      - path: /api/v1/safety
         pathType: Prefix
         backend:
           service:
