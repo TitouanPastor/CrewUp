@@ -74,12 +74,62 @@ async def broadcast_alert_to_group(group_id: UUID, alert: SafetyAlert, user: Use
         return False
 
 
+async def broadcast_alert_resolution(group_id: UUID, alert_id: UUID, resolver_name: str) -> bool:
+    """Broadcast alert resolution to group members via WebSocket AND update message in DB."""
+    try:
+        resolved_at = datetime.now(timezone.utc).isoformat()
+        
+        # 1. Update the message in the database
+        update_url = f"{config.GROUP_SERVICE_URL}/api/v1/groups/internal/update-alert/{group_id}/{alert_id}"
+        update_data = {
+            "resolved": True,
+            "resolved_at": resolved_at,
+            "resolved_by": resolver_name
+        }
+        
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            update_response = await client.patch(update_url, json=update_data)
+            update_response.raise_for_status()
+            logger.info(f"Updated alert {alert_id} in database")
+        
+        # 2. Broadcast resolution via WebSocket
+        broadcast_data = {
+            "type": "alert_resolved",
+            "alert_id": str(alert_id),
+            "resolver_name": resolver_name,
+            "resolved_at": resolved_at
+        }
+        
+        broadcast_url = f"{config.GROUP_SERVICE_URL}/api/v1/groups/internal/broadcast/{group_id}"
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.post(broadcast_url, json=broadcast_data)
+            response.raise_for_status()
+        
+        logger.info(f"Alert {alert_id} resolution broadcast to group {group_id}")
+        return True
+        
+    except httpx.TimeoutException:
+        logger.error(f"Timeout broadcasting resolution to group {group_id}")
+        return False
+    except httpx.HTTPError as e:
+        logger.error(f"HTTP error broadcasting resolution: {e}")
+        return False
+    except Exception as e:
+        logger.error(f"Failed to broadcast resolution: {e}")
+        return False
+
+
 def is_event_active(event: Event) -> bool:
     """
-    Check if event is currently active (started, not ended, not cancelled).
+    Check if event is currently active with 2-hour margin.
+    Event is considered active from 2h before start to 2h after end.
     Handles both timezone-aware and naive datetimes for compatibility.
     """
     now = datetime.now(timezone.utc)
+    
+    # 2-hour margin in seconds
+    MARGIN_HOURS = 2
+    MARGIN_SECONDS = MARGIN_HOURS * 60 * 60
     
     # Ensure timezone-aware datetimes (SQLite compatibility)
     start = event.event_start
@@ -90,8 +140,18 @@ def is_event_active(event: Event) -> bool:
     if end and end.tzinfo is None:
         end = end.replace(tzinfo=timezone.utc)
     
-    # Check: started, not ended, not cancelled
-    return start <= now and (not end or end > now) and not event.is_cancelled
+    # Default end time if not specified (24h after start)
+    if not end:
+        from datetime import timedelta
+        end = start + timedelta(hours=24)
+    
+    # Apply margin: 2h before start, 2h after end
+    from datetime import timedelta
+    active_start = start - timedelta(seconds=MARGIN_SECONDS)
+    active_end = end + timedelta(seconds=MARGIN_SECONDS)
+    
+    # Check: within margin window and not cancelled
+    return active_start <= now <= active_end and not event.is_cancelled
 
 
 # ==================== API Endpoints ====================
@@ -135,6 +195,7 @@ async def create_safety_alert(
             id=uuid4(),
             user_id=user.id,
             group_id=alert_data.group_id,
+            batch_id=alert_data.batch_id or uuid4(),  # Use provided batch_id or generate new one
             latitude=alert_data.latitude,
             longitude=alert_data.longitude,
             alert_type=alert_data.alert_type,
@@ -215,6 +276,51 @@ async def list_safety_alerts(
         )
 
 
+@router.get("/my-alerts", response_model=SafetyAlertListResponse)
+async def get_my_alerts(
+    resolved: Optional[bool] = Query(None, description="Filter by resolved status"),
+    limit: int = Query(50, ge=1, le=100, description="Number of alerts to return"),
+    offset: int = Query(0, ge=0, description="Number of alerts to skip"),
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get current user's own safety alerts."""
+    try:
+        # Get user
+        user = db.query(User).filter(User.keycloak_id == current_user["keycloak_id"]).first()
+        if not user:
+            raise NotFoundException("User profile not found")
+        
+        # Query alerts created by this user
+        query = db.query(SafetyAlert).filter(SafetyAlert.user_id == user.id)
+        
+        # Apply filters
+        if resolved is not None:
+            query = query.filter(
+                SafetyAlert.resolved_at.isnot(None) if resolved else SafetyAlert.resolved_at.is_(None)
+            )
+        
+        # Get total and fetch with pagination
+        total = query.count()
+        alerts = query.order_by(SafetyAlert.created_at.desc()).offset(offset).limit(limit).all()
+        
+        return SafetyAlertListResponse(
+            alerts=[SafetyAlertResponse.from_orm_with_user(alert, alert.user) for alert in alerts],
+            total=total,
+            limit=limit,
+            offset=offset
+        )
+        
+    except (NotFoundException, BadRequestException, ForbiddenException, SafetyException, HTTPException):
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get user alerts: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get user alerts"
+        )
+
+
 @router.get("/{alert_id}", response_model=SafetyAlertResponse)
 async def get_safety_alert(
     alert_id: UUID,
@@ -260,7 +366,7 @@ async def resolve_safety_alert(
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Mark alert as resolved (creator or group admin only)."""
+    """Mark alert as resolved (creator only). Resolves all alerts in the same batch."""
     try:
         # Get user
         user = db.query(User).filter(User.keycloak_id == current_user["keycloak_id"]).first()
@@ -272,27 +378,35 @@ async def resolve_safety_alert(
         if not alert:
             raise NotFoundException("Alert not found")
         
-        # Check permissions (creator or admin)
+        # Check permissions (creator only)
         is_creator = alert.user_id == user.id
-        is_admin = db.query(GroupMember).filter(
-            and_(
-                GroupMember.group_id == alert.group_id,
-                GroupMember.user_id == user.id,
-                GroupMember.is_admin == True
-            )
-        ).first()
         
-        if not (is_creator or is_admin):
-            raise SafetyException("Access denied: creator or admin only", status.HTTP_403_FORBIDDEN)
+        if not is_creator:
+            raise SafetyException("Access denied: only the alert creator can resolve it", status.HTTP_403_FORBIDDEN)
         
-        # Update alert status
-        alert.resolved_at = datetime.now(timezone.utc) if resolve_data.resolved else None
-        alert.resolved_by_user_id = user.id if resolve_data.resolved else None
+        # Get all alerts in the same batch
+        batch_id = alert.batch_id or alert.id
+        batch_alerts = db.query(SafetyAlert).filter(SafetyAlert.batch_id == batch_id).all()
+        
+        # Update all alerts in the batch
+        resolver_name = f"{user.first_name} {user.last_name}".strip() or user.email
+        resolved_time = datetime.now(timezone.utc) if resolve_data.resolved else None
+        
+        for batch_alert in batch_alerts:
+            batch_alert.resolved_at = resolved_time
+            batch_alert.resolved_by_user_id = user.id if resolve_data.resolved else None
         
         db.commit()
+        
+        # Refresh the original alert
         db.refresh(alert)
         
-        logger.info(f"Alert {alert_id} {'resolved' if resolve_data.resolved else 'unresolved'} by user {user.id}")
+        logger.info(f"Alert batch {batch_id} ({'resolved' if resolve_data.resolved else 'unresolved'}) by user {user.id} - {len(batch_alerts)} alerts updated")
+        
+        # Broadcast resolution to all groups in the batch
+        if resolve_data.resolved:
+            for batch_alert in batch_alerts:
+                await broadcast_alert_resolution(batch_alert.group_id, batch_alert.id, resolver_name)
         
         return SafetyAlertResponse.from_orm_with_user(alert, alert.user)
         

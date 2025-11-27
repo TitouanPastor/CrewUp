@@ -257,6 +257,20 @@ export default function EventDetailPage() {
 
   const isCreator = currentUserId && event && currentUserId === event.creator_id;
 
+  // Check if event is editable (only upcoming events can be edited)
+  const getEventStatus = (event: Event): 'upcoming' | 'started' | 'finished' => {
+    const now = new Date();
+    const start = new Date(event.event_start);
+    const end = event.event_end ? new Date(event.event_end) : new Date(start.getTime() + 24 * 60 * 60 * 1000);
+    
+    if (now < start) return 'upcoming';
+    if (now >= start && now <= end) return 'started';
+    return 'finished';
+  };
+
+  const eventStatus = event ? getEventStatus(event) : 'upcoming';
+  const canEdit = isCreator && eventStatus === 'upcoming'; // Only allow editing upcoming events
+
   // ✅ only show full-screen spinner on first load
   if (initialLoading) {
     return (
@@ -315,10 +329,20 @@ export default function EventDetailPage() {
                 <Badge variant="secondary" className="capitalize text-xs flex-shrink-0">
                   {event.event_type}
                 </Badge>
+                {eventStatus === 'started' && (
+                  <Badge className="bg-green-500 hover:bg-green-600 text-xs flex-shrink-0">
+                    Ongoing
+                  </Badge>
+                )}
+                {eventStatus === 'finished' && (
+                  <Badge variant="outline" className="text-xs flex-shrink-0">
+                    Finished
+                  </Badge>
+                )}
               </div>
 
               <div className="flex items-center gap-1 flex-shrink-0">
-                {isCreator && (
+                {canEdit && (
                   <Button
                     variant={isEditMode ? "default" : "ghost"}
                     size="sm"
@@ -396,8 +420,20 @@ export default function EventDetailPage() {
             {/* About Tab */}
             {activeTab === 'about' && (
               <div className="space-y-6">
+                {/* Info message for non-editable events */}
+                {isCreator && !canEdit && (
+                  <Card className="bg-muted/50">
+                    <CardContent className="p-4">
+                      <p className="text-sm text-muted-foreground">
+                        {eventStatus === 'started' && '⏳ This event has started and can no longer be edited.'}
+                        {eventStatus === 'finished' && '✓ This event has finished and is now read-only.'}
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+                
                 {/* Edit Form */}
-                {isEditMode && isCreator && (
+                {isEditMode && canEdit && (
                   <Card>
                     <CardHeader>
                       <CardTitle>Edit Event Details</CardTitle>
@@ -676,7 +712,7 @@ export default function EventDetailPage() {
                 <Separator />
 
                 {/* Edit Mode - Cancel/Un-cancel Event Button */}
-                {isEditMode && isCreator && (
+                {isEditMode && canEdit && (
                   <>
                     <div className="space-y-2">
                       {event.is_cancelled ? (

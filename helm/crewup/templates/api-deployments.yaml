@@ -31,6 +31,13 @@ spec:
           value: "{{ $.Values.keycloak.url }}"
         - name: KEYCLOAK_REALM
           value: "{{ $.Values.keycloak.realm }}"
+        {{- if eq $serviceName "safety" }}
+        # Inter-service communication URLs for safety service
+        - name: GROUP_SERVICE_URL
+          value: "http://group:8000"
+        - name: EVENT_SERVICE_URL
+          value: "http://event:8000"
+        {{- end }}
         {{- if $.Values.postgres.enabled }}
         # Database connection environment variables
         - name: POSTGRES_HOST

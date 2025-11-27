@@ -61,7 +61,7 @@ app.add_exception_handler(Exception, generic_exception_handler)
 # Include routers
 app.include_router(groups_router, prefix="/api/v1")
 app.include_router(chat_router, prefix="/api/v1")
-app.include_router(internal_router)  # No prefix for internal routes
+app.include_router(internal_router, prefix="/api/v1/groups")  # Internal routes under /api/v1/groups
 
 # Startup event
 @app.on_event("startup")

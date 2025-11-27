@@ -26,6 +26,8 @@ export interface ChatMessage {
   id: string;
   group_id: string;
   sender_id: string;
+  sender_first_name?: string;
+  sender_last_name?: string;
   content: string;
   sent_at: string;
 }

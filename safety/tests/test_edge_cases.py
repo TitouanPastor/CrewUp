@@ -13,11 +13,11 @@ class TestEventValidation:
     """Test event state validation for alerts."""
     
     def test_create_alert_event_not_started(self, client, mock_user, mock_group_member, db_session):
-        """Cannot create alert for event that hasn't started yet."""
-        # Update event to start in future
+        """Cannot create alert for event that starts >2h in future (outside margin)."""
+        # Update event to start >2h in future (outside 2h margin)
         event = db_session.query(Event).first()
-        event.event_start = datetime.now(timezone.utc) + timedelta(hours=1)
-        event.event_end = datetime.now(timezone.utc) + timedelta(hours=3)
+        event.event_start = datetime.now(timezone.utc) + timedelta(hours=3)
+        event.event_end = datetime.now(timezone.utc) + timedelta(hours=5)
         db_session.commit()
         
         alert_data = {
@@ -33,11 +33,11 @@ class TestEventValidation:
         assert "active events" in response.json()["detail"].lower()
     
     def test_create_alert_event_ended(self, client, mock_user, mock_group_member, db_session):
-        """Cannot create alert for ended event."""
-        # Update event to be in the past
+        """Cannot create alert for event ended >2h ago (outside margin)."""
+        # Update event to end >2h ago (outside 2h margin)
         event = db_session.query(Event).first()
-        event.event_start = datetime.now(timezone.utc) - timedelta(hours=3)
-        event.event_end = datetime.now(timezone.utc) - timedelta(hours=1)
+        event.event_start = datetime.now(timezone.utc) - timedelta(hours=5)
+        event.event_end = datetime.now(timezone.utc) - timedelta(hours=3)
         db_session.commit()
         
         alert_data = {
@@ -75,20 +75,20 @@ class TestEventValidation:
 class TestAlertTypes:
     """Test different alert types."""
     
-    def test_create_alert_type_emergency(self, client, mock_group_member):
-        """Create emergency alert."""
+    def test_create_alert_type_medical(self, client, mock_group_member):
+        """Create medical alert."""
         alert_data = {
             "group_id": str(mock_group_member.group_id),
             "latitude": 65.584819,
             "longitude": 22.154984,
-            "alert_type": "emergency",
-            "message": "Emergency alert"
+            "alert_type": "medical",
+            "message": "Medical alert"
         }
         
         response = client.post("/api/v1/safety", json=alert_data)
         assert response.status_code == status.HTTP_201_CREATED
         data = response.json()
-        assert data["alert_type"] == "emergency"
+        assert data["alert_type"] == "medical"
     
     def test_create_alert_type_other(self, client, mock_group_member):
         """Create other type alert."""
@@ -126,13 +126,16 @@ class TestAlertResolution:
     def test_unresolve_alert(self, client, mock_user, mock_group_member, db_session):
         """Test marking a resolved alert as unresolved."""
         # Create an alert and mark as resolved
+        alert_id = uuid4()
+        batch_id = uuid4()
         alert = SafetyAlert(
-            id=uuid4(),
+            id=alert_id,
             user_id=mock_user.id,
             group_id=mock_group_member.group_id,
             latitude=65.584819,
             longitude=22.154984,
-            alert_type="help"
+            alert_type="help",
+            batch_id=batch_id
         )
         db_session.add(alert)
         db_session.commit()
@@ -204,8 +207,8 @@ class TestSafetyException:
 class TestListFiltering:
     """Test alert list filtering combinations."""
     
-    def test_list_alerts_filter_by_type_emergency(self, client, mock_user, mock_group_member, db_session):
-        """Filter alerts by emergency type."""
+    def test_list_alerts_filter_by_type_harassment(self, client, mock_user, mock_group_member, db_session):
+        """Filter alerts by harassment type."""
         # Create different alert types
         alert1 = SafetyAlert(
             id=uuid4(),
@@ -213,7 +216,7 @@ class TestListFiltering:
             group_id=mock_group_member.group_id,
             latitude=65.58,
             longitude=22.15,
-            alert_type="emergency"
+            alert_type="harassment"
         )
         alert2 = SafetyAlert(
             id=uuid4(),
@@ -226,12 +229,12 @@ class TestListFiltering:
         db_session.add_all([alert1, alert2])
         db_session.commit()
         
-        response = client.get("/api/v1/safety?alert_type=emergency")
+        response = client.get("/api/v1/safety?alert_type=harassment")
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
-        # Filter works if we have at least one emergency alert
-        emergency_alerts = [a for a in data["alerts"] if a["alert_type"] == "emergency"]
-        assert len(emergency_alerts) >= 1
+        # Filter works if we have at least one harassment alert
+        harassment_alerts = [a for a in data["alerts"] if a["alert_type"] == "harassment"]
+        assert len(harassment_alerts) >= 1
     
     def test_list_alerts_pagination(self, client, mock_user, mock_group_member, db_session):
         """Test pagination with limit and offset."""

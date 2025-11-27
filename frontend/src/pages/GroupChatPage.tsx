@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Send, Users, ArrowLeft, MoreVertical, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import SafetyAlertMessage from '@/components/SafetyAlertMessage';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,7 +17,13 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useChatWebSocket } from '@/hooks/useChatWebSocket';
 import { groupService, type Group } from '@/services/groupService';
+import { safetyService, type SafetyAlert } from '@/services/safetyService';
+import { userService } from '@/services/userService';
+import { eventService } from '@/services/eventService';
+import type { Event } from '@/types';
 import keycloak from '@/keycloak';
+import { Link } from 'react-router-dom';
+import { formatDistanceToNow } from 'date-fns';
 
 interface Message {
   id: string;
@@ -24,7 +31,8 @@ interface Message {
   username: string;
   content: string;
   timestamp: string;
-  type: 'message' | 'system';
+  type: 'message' | 'system' | 'safety_alert';
+  alert_data?: SafetyAlert;
 }
 
 export default function GroupChatPage() {
@@ -34,20 +42,55 @@ export default function GroupChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const [group, setGroup] = useState<Group | null>(null);
+  const [event, setEvent] = useState<Event | null>(null);
   const [loadingGroup, setLoadingGroup] = useState(true);
   const [isMember, setIsMember] = useState(false);
   const [historyMessages, setHistoryMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
+  const [currentUserId, setCurrentUserId] = useState<string>('');
+
+  // Callback to handle alert resolution from WebSocket (memoized to prevent infinite loops)
+  const handleAlertResolved = useCallback((alertId: string, resolvedAt: string) => {
+    setHistoryMessages(prev => 
+      prev.map(msg => {
+        if (msg.alert_data?.id === alertId) {
+          return {
+            ...msg,
+            alert_data: {
+              ...msg.alert_data,
+              resolved: true,
+              resolved_at: resolvedAt,
+            }
+          };
+        }
+        return msg;
+      })
+    );
+  }, []); // Empty deps - callback never changes
 
   const { messages: wsMessages, sendMessage, isConnected, error } = useChatWebSocket(
     groupId!,
-    isMember // Only connect if user is a member
+    isMember, // Only connect if user is a member
+    handleAlertResolved // Pass the memoized callback
   );
 
   // Combined messages (history + real-time)
   const allMessages = [...historyMessages, ...wsMessages];
 
-  const currentUserId = keycloak.tokenParsed?.sub || '';
+  // Get current user's database ID (not Keycloak ID)
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const user = await userService.getMe();
+        setCurrentUserId(user.id);
+      } catch (error) {
+        console.error('Failed to fetch current user:', error);
+      }
+    };
+    fetchCurrentUser();
+  }, []);
+
+  const keycloakId = keycloak.tokenParsed?.sub || '';
 
   useEffect(() => {
     if (!groupId) return;
@@ -58,10 +101,18 @@ export default function GroupChatPage() {
         const groupData = await groupService.getGroup(groupId);
         setGroup(groupData);
 
+        // Load event details
+        try {
+          const eventData = await eventService.getEvent(groupData.event_id);
+          setEvent(eventData);
+        } catch (error) {
+          console.error('Failed to load event:', error);
+        }
+
         // Check membership
         try {
           const { members } = await groupService.getMembers(groupId);
-          const isUserMember = members.some((m) => m.keycloak_id === currentUserId);
+          const isUserMember = members.some((m) => m.keycloak_id === keycloakId);
           setIsMember(isUserMember);
 
           if (!isUserMember) {
@@ -77,14 +128,50 @@ export default function GroupChatPage() {
           // Load message history only if member
           const { messages } = await groupService.getMessages(groupId, 100);
           setHistoryMessages(
-            messages.map((msg) => ({
-              id: msg.id,
-              user_id: msg.sender_id,
-              username: msg.sender_id.slice(0, 8), // Use user ID as fallback username
-              content: msg.content,
-              timestamp: msg.sent_at,
-              type: 'message' as const,
-            }))
+            messages.map((msg) => {
+              // Try to parse content as JSON (for system messages like safety alerts)
+              try {
+                const parsed = JSON.parse(msg.content);
+                if (parsed.type === 'safety_alert') {
+                  // It's a safety alert - construct SafetyAlert object
+                  return {
+                    id: msg.id,
+                    user_id: parsed.user_id,
+                    username: parsed.user_name || 'Unknown User',
+                    content: '', // Not used for safety alerts
+                    timestamp: parsed.created_at || msg.sent_at,
+                    type: 'safety_alert' as const,
+                    alert_data: {
+                      id: parsed.alert_id,
+                      user_id: parsed.user_id,
+                      user_name: parsed.user_name,
+                      group_id: msg.group_id,
+                      alert_type: parsed.alert_type,
+                      message: parsed.message,
+                      latitude: parsed.latitude,
+                      longitude: parsed.longitude,
+                      created_at: parsed.created_at,
+                      resolved: parsed.resolved || false, // Get actual resolved status from DB
+                      resolved_at: parsed.resolved_at, // Get resolved timestamp if available
+                    },
+                  };
+                }
+              } catch {
+                // Not JSON or parsing failed - treat as regular message
+              }
+              
+              // Regular text message
+              return {
+                id: msg.id,
+                user_id: msg.sender_id,
+                username: msg.sender_first_name && msg.sender_last_name 
+                  ? `${msg.sender_first_name} ${msg.sender_last_name}`.trim()
+                  : msg.sender_first_name || msg.sender_last_name || 'Unknown User',
+                content: msg.content,
+                timestamp: msg.sent_at,
+                type: 'message' as const,
+              };
+            })
           );
         } catch (memberError: any) {
           // 403 means not a member
@@ -146,6 +233,8 @@ export default function GroupChatPage() {
       });
     }
   };
+
+
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -211,9 +300,19 @@ export default function GroupChatPage() {
               </div>
               <div>
                 <h1 className="font-semibold text-base">{group.name}</h1>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                   <Users className="w-3 h-3" />
                   <span>{group.member_count} members</span>
+                  {event && (
+                    <>
+                      <span>•</span>
+                      <Link to={`/events/${event.id}`} className="hover:text-primary hover:underline flex items-center gap-1">
+                        {event.name}
+                      </Link>
+                      <span>•</span>
+                      <span>{formatDistanceToNow(new Date(event.event_start), { addSuffix: true })}</span>
+                    </>
+                  )}
                   {!isConnected && (
                     <>
                       <span>·</span>
@@ -268,6 +367,19 @@ export default function GroupChatPage() {
           )}
 
           {allMessages.map((message, index) => {
+            // Safety Alert Message
+            if (message.type === 'safety_alert' && message.alert_data) {
+              return (
+                <div key={message.id} className="my-4">
+                  <SafetyAlertMessage
+                    alert={message.alert_data}
+                    currentUserId={currentUserId}
+                  />
+                </div>
+              );
+            }
+
+            // Regular Message
             const isCurrentUser = message.user_id === currentUserId;
             const prevMessage = index > 0 ? allMessages[index - 1] : null;
             const showAvatar = !prevMessage || prevMessage.user_id !== message.user_id;
@@ -300,7 +412,7 @@ export default function GroupChatPage() {
                   <div
                     className={`px-4 py-2.5 rounded-2xl ${
                       isCurrentUser
-                        ? 'bg-primary text-primary-foreground rounded-br-md'
+                        ? 'bg-blue-500 text-white rounded-br-md'
                         : 'bg-background border border-border rounded-bl-md'
                     }`}
                   >

@@ -98,10 +98,13 @@ def test_get_alert_success(client, db_session, mock_user, mock_group, mock_group
 
 def test_resolve_alert(client, db_session, mock_user, mock_group, mock_group_member):
     """Test resolving an alert."""
+    from uuid import uuid4
+    batch_id = uuid4()
     alert = SafetyAlert(
     user_id=mock_user.id,
     group_id=mock_group.id,
-    alert_type="help"
+    alert_type="help",
+    batch_id=batch_id
     )
     db_session.add(alert)
     db_session.commit()
@@ -116,3 +119,54 @@ def test_resolve_alert(client, db_session, mock_user, mock_group, mock_group_mem
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
     assert data["resolved_at"] is not None
+
+
+def test_get_my_alerts_success(client, db_session, mock_user, mock_group, mock_group_member):
+    """Test getting current user's own alerts."""
+    # Create alerts for the current user
+    alert1 = SafetyAlert(
+        user_id=mock_user.id,
+        group_id=mock_group.id,
+        alert_type="help",
+        message="My alert 1"
+    )
+    alert2 = SafetyAlert(
+        user_id=mock_user.id,
+        group_id=mock_group.id,
+        alert_type="medical",
+        message="My alert 2",
+        resolved_at=datetime.utcnow()
+    )
+    db_session.add_all([alert1, alert2])
+    db_session.commit()
+
+    # Test getting all user's alerts
+    response = client.get(
+        "/api/v1/safety/my-alerts",
+        headers={"Authorization": "Bearer mock-token"}
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    data = response.json()
+    assert data["total"] >= 2
+    assert len(data["alerts"]) >= 2
+
+    # Test filtering by resolved status
+    response = client.get(
+        "/api/v1/safety/my-alerts?resolved=false",
+        headers={"Authorization": "Bearer mock-token"}
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    data = response.json()
+    assert all(not alert["is_resolved"] for alert in data["alerts"])
+
+    # Test filtering for resolved alerts
+    response = client.get(
+        "/api/v1/safety/my-alerts?resolved=true",
+        headers={"Authorization": "Bearer mock-token"}
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    data = response.json()
+    assert all(alert["is_resolved"] for alert in data["alerts"])

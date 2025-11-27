@@ -26,14 +26,11 @@ export default function UserEventsSection({ userId }: UserEventsSectionProps) {
       setError(null);
 
       // Fetch user's created events, including cancelled and past ones
-      // Set start_date_from to a past date to include past events
-      const pastDate = new Date();
-      pastDate.setFullYear(pastDate.getFullYear() - 1); // Go back 1 year
-
       const response = await eventService.listEvents({
         creator_id: userId,
-        is_cancelled: true,  // Include cancelled events
-        start_date_from: pastDate.toISOString(),
+        is_cancelled: true,   // Include cancelled events
+        include_past: true,   // Include finished events
+        include_ongoing: true, // Include ongoing events
         limit: 20,
         offset: 0,
       });

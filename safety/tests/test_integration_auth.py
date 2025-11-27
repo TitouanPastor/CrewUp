@@ -203,7 +203,7 @@ class TestHealthCheck:
 
     def test_health_check(self, api_client):
         """Health check should return 200 without authentication."""
-        response = api_client.get("/api/v1/safety/health")
+        response = api_client.get("/health")
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "healthy"
@@ -399,8 +399,8 @@ class TestAlertCRUD:
             cursor.execute(
                 """
                 INSERT INTO safety_alerts (id, user_id, group_id, latitude, longitude, 
-                                          alert_type, message, created_at)
-                VALUES (gen_random_uuid(), %s, %s, 65.58, 22.15, 'help', 'Test alert', NOW())
+                                          alert_type, message, batch_id, created_at)
+                VALUES (gen_random_uuid(), %s, %s, 65.58, 22.15, 'help', 'Test alert', gen_random_uuid(), NOW())
                 RETURNING id
                 """,
                 (user_id, group_id)

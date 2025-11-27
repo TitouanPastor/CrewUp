@@ -13,7 +13,8 @@ from enum import Enum
 class AlertType(str, Enum):
     """Valid alert types."""
     HELP = "help"
-    EMERGENCY = "emergency"
+    MEDICAL = "medical"
+    HARASSMENT = "harassment"
     OTHER = "other"
 
 
@@ -23,9 +24,10 @@ class SafetyAlertCreate(BaseModel):
     """Request to create a safety alert."""
     
     group_id: UUID = Field(..., description="Group to send alert to")
+    batch_id: Optional[UUID] = Field(None, description="Batch ID to link multiple alerts together")
     latitude: Optional[float] = Field(None, description="User's current latitude", ge=-90, le=90)
     longitude: Optional[float] = Field(None, description="User's current longitude", ge=-180, le=180)
-    alert_type: str = Field("help", description="Type of alert: help, emergency, other")
+    alert_type: str = Field("help", description="Type of alert: help, medical, harassment, other")
     message: Optional[str] = Field(None, description="Optional message", max_length=500)
     
     @field_validator("alert_type")
@@ -56,6 +58,7 @@ class SafetyAlertResponse(BaseModel):
     id: UUID
     user_id: UUID
     group_id: UUID
+    batch_id: Optional[UUID]
     latitude: Optional[float]
     longitude: Optional[float]
     alert_type: str
@@ -79,6 +82,7 @@ class SafetyAlertResponse(BaseModel):
             id=alert.id,
             user_id=alert.user_id,
             group_id=alert.group_id,
+            batch_id=alert.batch_id,
             latitude=float(alert.latitude) if alert.latitude else None,
             longitude=float(alert.longitude) if alert.longitude else None,
             alert_type=alert.alert_type,

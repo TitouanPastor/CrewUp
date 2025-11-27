@@ -11,7 +11,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Default to all tests
-TEST_TYPE="${1:-unit}"
+TEST_TYPE="${1:-all}"
 
 echo "============================================================"
 echo "Safety Service - Test Suite"
@@ -111,3 +111,4 @@ else
     echo -e "${GREEN}✓ Unit tests completed!${NC}"
 fi
 echo "============================================================"
+

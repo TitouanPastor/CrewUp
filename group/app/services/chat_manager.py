@@ -90,8 +90,8 @@ class ChatManager:
         
         logger.info(f"User {username} ({user_id}) connected to group {group_id}")
         
-        # Broadcast join notification to other members
-        await self.broadcast_system_message(
+        # Broadcast join notification to existing members (excluding the new member)
+        await self.broadcast_member_event(
             group_id=group_id,
             message_type="member_joined",
             user_id=user_id,
@@ -119,7 +119,7 @@ class ChatManager:
         logger.info(f"User {username} ({user_id}) disconnected from group {group_id}")
         
         # Broadcast leave notification to remaining members
-        await self.broadcast_system_message(
+        await self.broadcast_member_event(
             group_id=group_id,
             message_type="member_left",
             user_id=user_id,
@@ -188,7 +188,7 @@ class ChatManager:
         for ws, user_id, username in disconnected:
             await self.disconnect(group_id, ws, user_id, username)
     
-    async def broadcast_system_message(
+    async def broadcast_member_event(
         self,
         group_id: UUID,
         message_type: str,

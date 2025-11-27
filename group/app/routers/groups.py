@@ -400,15 +400,37 @@ async def list_messages(
     # Get total count
     total = db.query(func.count(Message.id)).filter(Message.group_id == group_id).scalar()
     
-    # Get messages (newest first)
-    messages = db.query(Message).filter(
+    # Get messages with sender information (JOIN with User table)
+    from app.db.models import User
+    messages_query = db.query(
+        Message,
+        User.first_name,
+        User.last_name
+    ).outerjoin(
+        User, Message.sender_id == User.id
+    ).filter(
         Message.group_id == group_id
     ).order_by(
         Message.sent_at.desc()
     ).limit(limit).offset(offset).all()
     
+    # Build response with sender names
+    message_responses = []
+    for msg, first_name, last_name in reversed(messages_query):
+        msg_dict = {
+            "id": msg.id,
+            "group_id": msg.group_id,
+            "sender_id": msg.sender_id,
+            "sender_first_name": first_name,
+            "sender_last_name": last_name,
+            "content": msg.content,
+            "is_edited": msg.is_edited,
+            "sent_at": msg.sent_at,
+        }
+        message_responses.append(MessageResponse(**msg_dict))
+    
     return MessageListResponse(
-        messages=[MessageResponse.model_validate(m) for m in reversed(messages)],  # Reverse to oldest first
+        messages=message_responses,
         total=total,
         limit=limit,
         offset=offset

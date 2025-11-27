@@ -118,6 +118,7 @@ class SafetyAlert(Base):
     id = Column(UUID(), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     group_id = Column(UUID(), ForeignKey("groups.id", ondelete="CASCADE"), nullable=False)
+    batch_id = Column(UUID())  # Links alerts sent to multiple groups at once
     latitude = Column(DECIMAL(10, 8))
     longitude = Column(DECIMAL(11, 8))
     alert_type = Column(String(50), default="help")

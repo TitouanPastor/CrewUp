@@ -245,12 +245,15 @@ class TestResolveAlert:
     def test_resolve_alert_success(self, client, mock_user, mock_group, mock_group_member, mock_current_user, db_session):
         """Test resolving an alert."""
         from app.db import SafetyAlert
+        from uuid import uuid4
+        batch_id = uuid4()
         alert = SafetyAlert(
             user_id=mock_user.id,
             group_id=mock_group.id,
             latitude=65.584819,
             longitude=22.154984,
-            alert_type="help"
+            alert_type="help",
+            batch_id=batch_id
         )
         db_session.add(alert)
         db_session.commit()

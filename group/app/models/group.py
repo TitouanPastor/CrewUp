@@ -84,6 +84,8 @@ class MessageResponse(BaseModel):
     id: UUID
     group_id: UUID
     sender_id: UUID
+    sender_first_name: Optional[str] = None
+    sender_last_name: Optional[str] = None
     content: str
     is_edited: bool = False
     sent_at: datetime
