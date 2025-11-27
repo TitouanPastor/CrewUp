@@ -12,8 +12,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
 import { useToast } from '@/hooks/use-toast';
-import { groupService } from '@/services/groupService';
 import { eventService } from '@/services/eventService';
+import { groupService } from '@/services/groupService';
+import { extractErrorMessage } from '@/utils/errorHandler';
 import { userService } from '@/services/userService';
 import CreateGroupDialog from '@/components/CreateGroupDialog';
 import GroupList from '@/components/GroupList';
@@ -82,7 +83,7 @@ export default function EventDetailPage() {
         console.error('Failed to load event:', error);
         toast({
           title: "Error",
-          description: "Failed to load event details. Please try again later.",
+          description: extractErrorMessage(error),
           variant: "destructive",
         });
       } finally {
@@ -165,9 +166,9 @@ export default function EventDetailPage() {
     try {
       await eventService.joinEvent(id!, status);
       reloadEvent(); // ✅ smooth refresh
-    } catch {
+    } catch (error) {
       setEvent(previous);
-      toast({ title: "Error", description: "Failed to update RSVP.", variant: "destructive" });
+      toast({ title: "Error", description: extractErrorMessage(error), variant: "destructive" });
     }
   };
 
@@ -187,9 +188,9 @@ export default function EventDetailPage() {
     try {
       await eventService.leaveEvent(id!);
       reloadEvent();
-    } catch {
+    } catch (error) {
       setEvent(previous);
-      toast({ title: "Error", description: "Failed to update RSVP.", variant: "destructive" });
+      toast({ title: "Error", description: extractErrorMessage(error), variant: "destructive" });
     }
   };
 
@@ -219,7 +220,7 @@ export default function EventDetailPage() {
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.response?.data?.detail || "Failed to update event.",
+        description: extractErrorMessage(error),
         variant: "destructive",
       });
     } finally {

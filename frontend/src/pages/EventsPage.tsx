@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/select';
 import { eventService } from '@/services/eventService';
 import { useToast } from '@/hooks/use-toast';
+import { extractErrorMessage } from '@/utils/errorHandler';
 import CreateEventDialog from '@/components/CreateEventDialog';
 import { Plus } from 'lucide-react';
 
@@ -72,7 +73,7 @@ export default function EventsPage() {
       console.error('Failed to load events:', error);
       toast({
         title: "Error",
-        description: "Failed to load events. Please try again later.",
+        description: extractErrorMessage(error),
         variant: "destructive",
       });
     } finally {

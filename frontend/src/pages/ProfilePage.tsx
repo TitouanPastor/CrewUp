@@ -31,6 +31,7 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
+import { extractErrorMessage } from '@/utils/errorHandler';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import UserEventsSection from '@/components/UserEventsSection';
 import UserAlertsSection from '@/components/UserAlertsSection';
@@ -83,11 +84,12 @@ export default function ProfilePage() {
       }
     } catch (err: any) {
       console.error('Failed to load profile:', err);
-      setError(err.response?.data?.error?.message || 'Failed to load profile');
+      const errorMsg = extractErrorMessage(err);
+      setError(errorMsg);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to load your profile. Please try again.",
+        description: errorMsg,
       });
     } finally {
       setLoading(false);
@@ -113,7 +115,7 @@ export default function ProfilePage() {
       });
     } catch (err: any) {
       console.error('Failed to update profile:', err);
-      const errorMsg = err.response?.data?.error?.message || 'Failed to update profile';
+      const errorMsg = extractErrorMessage(err);
       setError(errorMsg);
       toast({
         variant: "destructive",

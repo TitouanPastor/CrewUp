@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { useAuthStore } from '@/stores/authStore';
 import { groupService, type Group, type GroupMember } from '@/services/groupService';
+import { extractErrorMessage } from '@/utils/errorHandler';
 import { Users, MessageCircle, Lock, Loader2, UserMinus } from 'lucide-react';
 
 interface GroupListProps {
@@ -85,7 +86,7 @@ export default function GroupList({ eventId, onRefresh }: GroupListProps) {
       navigate(`/groups/${groupId}/chat`);
     } catch (error: any) {
       console.error('Failed to join group:', error);
-      const message = error.response?.data?.detail;
+      const message = extractErrorMessage(error);
       toast({
         title: 'Failed to join group',
         description: message === 'Group is full' ? 'This group is full' : 'Please try again later',

@@ -20,6 +20,7 @@ import { groupService, type Group } from '@/services/groupService';
 import { type SafetyAlert } from '@/services/safetyService';
 import { userService } from '@/services/userService';
 import { eventService } from '@/services/eventService';
+import { extractErrorMessage } from '@/utils/errorHandler';
 import type { Event } from '@/types';
 import keycloak from '@/keycloak';
 import { Link } from 'react-router-dom';
@@ -190,7 +191,7 @@ export default function GroupChatPage() {
         console.error('Failed to load group:', error);
         toast({
           title: 'Failed to load group',
-          description: error.response?.data?.detail || 'Please try again',
+          description: extractErrorMessage(error),
           variant: 'destructive',
         });
         navigate(-1);
@@ -229,7 +230,7 @@ export default function GroupChatPage() {
     } catch (error) {
       toast({
         title: 'Failed to leave group',
-        description: 'Please try again',
+        description: extractErrorMessage(error),
         variant: 'destructive',
       });
     }

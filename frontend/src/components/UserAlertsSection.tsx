@@ -16,6 +16,7 @@ import {
   Users,
 } from 'lucide-react';
 import { safetyService, type SafetyAlert } from '@/services/safetyService';
+import { extractErrorMessage } from '@/utils/errorHandler';
 import { groupService, type Group } from '@/services/groupService';
 import { eventService } from '@/services/eventService';
 import { useToast } from '@/hooks/use-toast';
@@ -182,7 +183,7 @@ export default function UserAlertsSection() {
       console.error('Failed to resolve alert:', error);
       toast({
         title: 'Error',
-        description: error.response?.data?.detail || 'Failed to resolve alert',
+        description: extractErrorMessage(error),
         variant: 'destructive',
       });
     } finally {

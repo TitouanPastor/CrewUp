@@ -23,6 +23,7 @@ import {
 import { safetyService, type CreateAlertData } from '@/services/safetyService';
 import { eventService } from '@/services/eventService';
 import { groupService, type Group } from '@/services/groupService';
+import { extractErrorMessage } from '@/utils/errorHandler';
 import { useToast } from '@/hooks/use-toast';
 import keycloak from '@/keycloak';
 import type { Event } from '@/types';
@@ -242,7 +243,7 @@ export default function SafetyAlertDialog({
       console.error('Failed to load active events:', error);
       toast({
         title: 'Error',
-        description: 'Failed to load your active events',
+        description: extractErrorMessage(error),
         variant: 'destructive',
       });
     } finally {
@@ -313,7 +314,7 @@ export default function SafetyAlertDialog({
       console.error('Failed to send alert:', error);
       toast({
         title: 'Failed to send alert',
-        description: 'Please try again',
+        description: extractErrorMessage(error),
         variant: 'destructive',
       });
     } finally {

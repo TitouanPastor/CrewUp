@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { groupService } from '@/services/groupService';
+import { extractErrorMessage } from '@/utils/errorHandler';
 import { Loader2 } from 'lucide-react';
 
 interface CreateGroupDialogProps {
@@ -75,7 +76,7 @@ export default function CreateGroupDialog({
       console.error('Failed to create group:', error);
       toast({
         title: 'Failed to create group',
-        description: error.response?.data?.detail || 'Please try again later',
+        description: extractErrorMessage(error),
         variant: 'destructive',
       });
     } finally {

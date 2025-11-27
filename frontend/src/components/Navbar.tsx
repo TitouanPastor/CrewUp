@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import SafetyAlertDialog from './SafetyAlertDialog';
 import { useActiveAlert } from '@/hooks/useActiveAlert';
 import { safetyService } from '@/services/safetyService';
+import { extractErrorMessage } from '@/utils/errorHandler';
 import { useToast } from '@/hooks/use-toast';
 import {
   DropdownMenu,
@@ -75,7 +76,7 @@ export default function Navbar() {
           console.error('Failed to resolve alert:', error);
           toast({
             title: 'Failed to resolve alert',
-            description: error.response?.data?.detail || 'Please try again',
+            description: extractErrorMessage(error),
             variant: 'destructive',
           });
         } finally {

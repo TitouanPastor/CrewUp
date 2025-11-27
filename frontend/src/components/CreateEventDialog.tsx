@@ -22,6 +22,7 @@ import {
 import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
 import { useToast } from '@/hooks/use-toast';
 import { eventService } from '@/services/eventService';
+import { extractErrorMessage } from '@/utils/errorHandler';
 import { Loader2 } from 'lucide-react';
 
 interface CreateEventDialogProps {
@@ -137,7 +138,7 @@ export default function CreateEventDialog({
       console.error('Failed to create event:', error);
       toast({
         title: 'Failed to create event',
-        description: error.response?.data?.detail || 'Please try again later',
+        description: extractErrorMessage(error),
         variant: 'destructive',
       });
     } finally {
