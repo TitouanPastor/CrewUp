@@ -7,11 +7,12 @@ This service handles:
 - Real-time WebSocket chat
 - Message history
 - Typing indicators
+- Internal broadcast API for inter-service communication
 
 Architecture:
 - app/models/ - Pydantic validation models
 - app/db/ - SQLAlchemy ORM and database connection
-- app/routers/ - REST API endpoints + WebSocket
+- app/routers/ - REST API endpoints + WebSocket + Internal API
 - app/middleware/ - JWT authentication
 - app/services/ - WebSocket connection manager
 - app/utils/ - Logging and error handling
