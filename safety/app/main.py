@@ -1,6 +1,6 @@
 """
 Safety Service - FastAPI application.
-Emergency alert system for CrewUp events.
+Emergency alert system for CrewUp events with group broadcast integration.
 """
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
