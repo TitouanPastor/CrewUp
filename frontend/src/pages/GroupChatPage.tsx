@@ -17,7 +17,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useChatWebSocket } from '@/hooks/useChatWebSocket';
 import { groupService, type Group } from '@/services/groupService';
-import { safetyService, type SafetyAlert } from '@/services/safetyService';
+import { type SafetyAlert } from '@/services/safetyService';
 import { userService } from '@/services/userService';
 import { eventService } from '@/services/eventService';
 import type { Event } from '@/types';
@@ -145,6 +145,7 @@ export default function GroupChatPage() {
                       id: parsed.alert_id,
                       user_id: parsed.user_id,
                       user_name: parsed.user_name,
+                      event_id: parsed.event_id, // Get from parsed data if available
                       group_id: msg.group_id,
                       alert_type: parsed.alert_type,
                       message: parsed.message,

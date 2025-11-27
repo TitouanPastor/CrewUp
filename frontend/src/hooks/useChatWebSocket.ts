@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ChatWebSocket } from '@/services/groupService';
+import type { SafetyAlert } from '@/services/safetyService';
 
 interface ChatMessage {
   id: string;
@@ -9,18 +10,7 @@ interface ChatMessage {
   timestamp: string;
   type: 'message' | 'system' | 'safety_alert';
   // Safety alert specific data
-  alert_data?: {
-    id: string;
-    user_id: string;
-    group_id?: string;
-    alert_type: string;
-    message?: string;
-    latitude?: number;
-    longitude?: number;
-    created_at: string;
-    resolved?: boolean;
-    resolved_at?: string;
-  };
+  alert_data?: SafetyAlert;
 }
 
 interface UseChatWebSocketReturn {
@@ -91,6 +81,8 @@ export const useChatWebSocket = (
                 id: data.alert_id,
                 user_id: data.user_id,
                 user_name: data.user_name,
+                event_id: data.event_id, // Get from WebSocket data if available
+                group_id: data.group_id || groupId, // Use groupId from hook if not in data
                 alert_type: data.alert_type,
                 message: data.message,
                 latitude: data.latitude,
@@ -112,7 +104,7 @@ export const useChatWebSocket = (
         
         // Also update wsMessages
         setMessages((prev) => {
-          return prev.map((msg) => {
+          return prev.map((msg): ChatMessage => {
             if (msg.alert_data?.id === data.alert_id) {
               return {
                 ...msg,
@@ -120,7 +112,7 @@ export const useChatWebSocket = (
                   ...msg.alert_data,
                   resolved: true,
                   resolved_at: data.resolved_at,
-                },
+                } as SafetyAlert,
               };
             }
             return msg;

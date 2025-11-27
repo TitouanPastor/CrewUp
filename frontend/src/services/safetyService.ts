@@ -5,7 +5,7 @@ export interface SafetyAlert {
   id: string;
   user_id: string;
   user_name?: string; // Full name of the user who created the alert
-  event_id: string;
+  event_id?: string; // Optional since it can be inferred from group
   group_id: string;
   batch_id?: string;  // Links multiple alerts together
   alert_type: 'help' | 'medical' | 'harassment' | 'other';
