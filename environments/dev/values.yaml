@@ -37,7 +37,7 @@ services:
     enabled: true
     replicas: 1
     port: 8000
-    imageTag: "latest"  # Auto-updated by CI/CD
+    imageTag: "0407a13"
     
   rating:
     enabled: true
