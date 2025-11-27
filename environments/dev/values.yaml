@@ -49,7 +49,7 @@ services:
     enabled: true
     replicas: 1
     port: 8000
-    imageTag: "839fe65"
+    imageTag: "47058b5"
     
   user:
     enabled: true
