@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Calendar, User, AlertTriangle, Moon, Sun, CheckCircle, Loader2 } from 'lucide-react';
+import { Home, Calendar, User, AlertTriangle, Moon, Sun, CheckCircle, Loader2, MessageCircle } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
@@ -108,6 +108,7 @@ export default function Navbar() {
   const navItems = [
     { path: '/', icon: Home, label: 'Home' },
     { path: '/events', icon: Calendar, label: 'Events' },
+    { path: '/groups', icon: MessageCircle, label: 'Groups' },
     { path: '/profile', icon: User, label: 'Profile' },
   ];
 

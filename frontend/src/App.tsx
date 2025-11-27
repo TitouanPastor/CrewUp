@@ -4,6 +4,7 @@ import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
 import EventsPage from './pages/EventsPage';
 import EventDetailPage from './pages/EventDetailPage';
+import GroupsPage from './pages/GroupsPage';
 import GroupChatPage from './pages/GroupChatPage';
 import ProfilePage from './pages/ProfilePage';
 import NotFoundPage from './pages/NotFoundPage';
@@ -35,6 +36,7 @@ function App() {
           <Route index element={<HomePage />} />
           <Route path="events" element={<EventsPage />} />
           <Route path="events/:id" element={<EventDetailPage />} />
+          <Route path="groups" element={<GroupsPage />} />
           <Route path="groups/:id/chat" element={<GroupChatPage />} />
           <Route path="profile" element={<ProfilePage />} />
           {/* Catch-all route for 404 */}
