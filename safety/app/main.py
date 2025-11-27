@@ -44,8 +44,8 @@ app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.add_exception_handler(SQLAlchemyError, database_exception_handler)
 app.add_exception_handler(Exception, generic_exception_handler)
 
-# Include routers
-app.include_router(alerts_router, prefix="/api/v1")
+# Include routers WITHOUT additional prefix (router already has /safety)
+app.include_router(alerts_router)
 
 
 @app.get("/health", tags=["health"])

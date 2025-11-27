@@ -24,7 +24,7 @@ from app.utils import NotFoundException, BadRequestException, ForbiddenException
 
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/safety", tags=["safety-alerts"])
+router = APIRouter(prefix="/api/v1/safety", tags=["safety-alerts"])
 
 
 class SafetyException(HTTPException):
