@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Home, Calendar, User, AlertTriangle } from 'lucide-react';
-import { useAppStore } from '@/stores/appStore';
 import { useState, useRef, useEffect } from 'react';
+import SafetyAlertDialog from './SafetyAlertDialog';
 
 const navItems = [
   { path: '/', icon: Home, label: 'Home' },
@@ -11,9 +11,10 @@ const navItems = [
 
 export default function BottomNav() {
   const location = useLocation();
-  const { isPartyMode, togglePartyMode } = useAppStore();
   const [isLongPressing, setIsLongPressing] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [showAlertDialog, setShowAlertDialog] = useState(false);
+  const [hasActiveEvents, setHasActiveEvents] = useState(true); // Optimistic default
   const longPressTimer = useRef<number | null>(null);
   const progressInterval = useRef<number | null>(null);
 
@@ -27,7 +28,8 @@ export default function BottomNav() {
     }, 100);
 
     longPressTimer.current = window.setTimeout(() => {
-      togglePartyMode();
+      // Open alert dialog after 2s
+      setShowAlertDialog(true);
       setIsLongPressing(false);
       setProgress(0);
       if (progressInterval.current) clearInterval(progressInterval.current);
@@ -75,10 +77,13 @@ export default function BottomNav() {
           
           {/* Alert Button */}
           <button
-            onTouchStart={handleAlertStart}
-            onTouchEnd={handleAlertEnd}
+            onTouchStart={hasActiveEvents ? handleAlertStart : undefined}
+            onTouchEnd={hasActiveEvents ? handleAlertEnd : undefined}
+            disabled={!hasActiveEvents}
             className={`relative flex flex-col items-center justify-center flex-1 h-full gap-0.5 transition-colors overflow-hidden ${
-              isPartyMode
+              !hasActiveEvents
+                ? 'text-muted-foreground/40 cursor-not-allowed'
+                : showAlertDialog
                 ? 'text-destructive'
                 : 'text-muted-foreground'
             }`}
@@ -92,11 +97,18 @@ export default function BottomNav() {
                 opacity: isLongPressing ? 1 : 0
               }}
             />
-            <AlertTriangle className="w-6 h-6 relative z-10" strokeWidth={isPartyMode ? 2.5 : 2} />
+            <AlertTriangle className="w-6 h-6 relative z-10" strokeWidth={showAlertDialog ? 2.5 : 2} />
             <span className="text-[11px] font-medium relative z-10">Alert</span>
           </button>
         </div>
       </nav>
+
+      {/* Safety Alert Dialog */}
+      <SafetyAlertDialog
+        open={showAlertDialog}
+        onOpenChange={setShowAlertDialog}
+        onActiveEventsChange={setHasActiveEvents}
+      />
     </>
   );
 }

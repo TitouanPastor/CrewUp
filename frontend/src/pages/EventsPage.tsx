@@ -46,17 +46,20 @@ export default function EventsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('all');
   const [sortBy, setSortBy] = useState('date');
+  const [showFinished, setShowFinished] = useState(false);
   const [showCreateEvent, setShowCreateEvent] = useState(false);
 
   useEffect(() => {
     loadEvents();
-  }, [selectedType]);
+  }, [selectedType, showFinished]);
 
   const loadEvents = async () => {
     try {
       setLoading(true);
       const params: any = {
         limit: 100,
+        include_ongoing: true,  // Always show ongoing events (default)
+        include_past: showFinished,  // Show finished events only if toggled
       };
 
       if (selectedType !== 'all') {
@@ -91,12 +94,23 @@ export default function EventsPage() {
     });
   };
 
-  // Filter and sort events
+  const getEventStatus = (event: Event): 'upcoming' | 'started' | 'finished' => {
+    const now = new Date();
+    const start = new Date(event.event_start);
+    const end = event.event_end ? new Date(event.event_end) : new Date(start.getTime() + 24 * 60 * 60 * 1000);
+    
+    if (now < start) return 'upcoming';
+    if (now >= start && now <= end) return 'started';
+    return 'finished';
+  };
+
+  // Filter and sort events (backend now handles finished/ongoing filtering)
   const filteredEvents = events
     .filter((event) => {
       const matchesSearch = event.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (event.description?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
         (event.address?.toLowerCase() || '').includes(searchQuery.toLowerCase());
+      
       return matchesSearch;
     })
     .sort((a, b) => {
@@ -158,6 +172,15 @@ export default function EventsPage() {
                     <SelectItem value="popular">Most Popular</SelectItem>
                   </SelectContent>
                 </Select>
+                
+                <Button
+                  variant={showFinished ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setShowFinished(!showFinished)}
+                  className="h-9"
+                >
+                  {showFinished ? 'Hide' : 'Show'} Finished
+                </Button>
               </div>
 
               {/* Mobile Filters */}
@@ -202,6 +225,15 @@ export default function EventsPage() {
                           <SelectItem value="popular">Most Popular</SelectItem>
                         </SelectContent>
                       </Select>
+                    </div>
+                    <div>
+                      <Button
+                        variant={showFinished ? "default" : "outline"}
+                        onClick={() => setShowFinished(!showFinished)}
+                        className="w-full"
+                      >
+                        {showFinished ? 'Hide' : 'Show'} Finished Events
+                      </Button>
                     </div>
                   </div>
                 </SheetContent>
@@ -251,17 +283,36 @@ export default function EventsPage() {
         {/* Events Grid */}
         {!loading && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-            {filteredEvents.map((event) => (
+            {filteredEvents.map((event) => {
+              const status = getEventStatus(event);
+              const isFinished = status === 'finished';
+              const isStarted = status === 'started';
+              
+              return (
               <Card
                 key={event.id}
                 onClick={() => navigate(`/events/${event.id}`)}
-                className="hover:shadow-lg hover:border-primary/50 transition-all cursor-pointer overflow-hidden group"
+                className={`hover:shadow-lg hover:border-primary/50 transition-all cursor-pointer overflow-hidden group ${
+                  isFinished ? 'opacity-60' : ''
+                }`}
               >
                 <CardContent className="p-5 space-y-4">
                   <div>
-                    <h3 className="text-lg font-semibold mb-2 group-hover:text-primary transition-colors line-clamp-1">
-                      {event.name}
-                    </h3>
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <h3 className="text-lg font-semibold group-hover:text-primary transition-colors line-clamp-1 flex-1">
+                        {event.name}
+                      </h3>
+                      {isStarted && (
+                        <Badge variant="default" className="bg-green-500 hover:bg-green-600 flex-shrink-0">
+                          Started
+                        </Badge>
+                      )}
+                      {isFinished && (
+                        <Badge variant="secondary" className="flex-shrink-0">
+                          Finished
+                        </Badge>
+                      )}
+                    </div>
                     <p className="text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]">
                       {event.description}
                     </p>
@@ -300,7 +351,8 @@ export default function EventsPage() {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+            );
+            })}
           </div>
         )}
 

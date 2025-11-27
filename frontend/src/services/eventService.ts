@@ -40,6 +40,8 @@ export interface ListEventsParams {
   latitude?: number;
   longitude?: number;
   radius_km?: number;
+  include_past?: boolean;  // Include finished events (default: false)
+  include_ongoing?: boolean;  // Include ongoing events (default: true)
   limit?: number;
   offset?: number;
 }

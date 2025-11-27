@@ -686,6 +686,8 @@ async def list_events(
     latitude: Optional[float] = Query(None, ge=-90, le=90, description="Filter by location latitude"),
     longitude: Optional[float] = Query(None, ge=-180, le=180, description="Filter by location longitude"),
     radius_km: float = Query(10, gt=0, le=100, description="Search radius in kilometers (default: 10)"),
+    include_past: bool = Query(False, description="Include past events (finished events)"),
+    include_ongoing: bool = Query(True, description="Include ongoing events (currently happening)"),
     limit: int = Query(50, ge=1, le=100, description="Number of events to return"),
     offset: int = Query(0, ge=0, description="Number of events to skip"),
     current_user: Optional[dict] = Depends(get_optional_current_user),
@@ -694,12 +696,17 @@ async def list_events(
     """
     List events with filters and pagination.
 
-    By default, shows only public, non-cancelled, future events sorted by event_start ASC.
+    By default, shows only public, non-cancelled, upcoming AND ongoing events sorted by event_start ASC.
     Authentication is optional - without auth, only public events are shown.
     If authenticated, can filter by user's RSVP status and see private events they're part of.
+    
+    Time filtering:
+    - include_ongoing=True (default): Shows events currently happening (started but not finished)
+    - include_past=False (default): Excludes finished events
+    - include_past=True: Shows all events including finished ones (read-only)
     """
     try:
-        from datetime import datetime, timezone
+        from datetime import datetime, timezone, timedelta
         from math import radians, cos, sin, asin, sqrt
         from decimal import Decimal
 
@@ -740,11 +747,20 @@ async def list_events(
         # 6. Build base query
         query = db.query(Event)
 
-        # 7. Default filters (always applied unless explicitly overridden)
+        # 7. Default time filters with 2-hour margin (for ongoing events detection)
         now = datetime.now(timezone.utc)
-
-        # Show only future events by default
-        query = query.filter(Event.event_start > now)
+        margin = timedelta(hours=2)  # Same margin as safety service
+        
+        # Filter by event status (past/ongoing/upcoming)
+        if not include_past:
+            # Exclude finished events (event_end + margin < now)
+            # This means: show events that haven't fully ended yet (including 2h after)
+            query = query.filter(Event.event_end + margin > now)
+        
+        if not include_ongoing:
+            # Exclude ongoing events (event_start - margin < now < event_end + margin)
+            # This means: only show future events (not started yet, considering margin)
+            query = query.filter(Event.event_start - margin > now)
 
         # Show only non-cancelled events unless is_cancelled=True
         if not is_cancelled:

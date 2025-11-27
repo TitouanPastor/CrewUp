@@ -152,12 +152,13 @@ CREATE TABLE safety_alerts (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     group_id UUID NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+    batch_id UUID,  -- Links alerts sent to multiple groups at once
     
     -- Location at time of alert
     latitude DECIMAL(10, 8),
     longitude DECIMAL(11, 8),
     
-    alert_type VARCHAR(50) DEFAULT 'help' CHECK (alert_type IN ('help', 'emergency', 'other')),
+    alert_type VARCHAR(50) DEFAULT 'help' CHECK (alert_type IN ('help', 'medical', 'harassment', 'other')),
     message TEXT,
     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -168,6 +169,7 @@ CREATE TABLE safety_alerts (
 CREATE INDEX idx_safety_alerts_group ON safety_alerts(group_id);
 CREATE INDEX idx_safety_alerts_user ON safety_alerts(user_id);
 CREATE INDEX idx_safety_alerts_created ON safety_alerts(created_at);
+CREATE INDEX idx_safety_alerts_batch ON safety_alerts(batch_id);
 
 -- ============================================
 -- EVENT ATTENDEES (RSVP status)

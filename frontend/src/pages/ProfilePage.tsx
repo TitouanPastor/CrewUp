@@ -33,6 +33,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import UserEventsSection from '@/components/UserEventsSection';
+import UserAlertsSection from '@/components/UserAlertsSection';
 
 export default function ProfilePage() {
   const { logout } = useAuthStore();
@@ -355,6 +356,9 @@ export default function ProfilePage() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Safety Alerts Section */}
+            <UserAlertsSection />
 
             {/* Created Events Section */}
             {user && <UserEventsSection userId={user.id} />}

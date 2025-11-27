@@ -15,8 +15,8 @@
       crossorigin=""/>
   </head>
   <body>
-    <!-- Runtime configuration injected by entrypoint.sh -->
-    <script src="/config.js"></script>
+    <!-- Runtime configuration injected by entrypoint.sh (production only) -->
+    <script src="/config.js" onerror="console.log('No config.js - using dev defaults')"></script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

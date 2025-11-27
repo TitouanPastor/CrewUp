@@ -90,8 +90,8 @@ class ChatManager:
         
         logger.info(f"User {username} ({user_id}) connected to group {group_id}")
         
-        # Broadcast join notification to other members
-        await self.broadcast_system_message(
+        # Broadcast join notification to existing members (excluding the new member)
+        await self.broadcast_member_event(
             group_id=group_id,
             message_type="member_joined",
             user_id=user_id,
@@ -119,7 +119,7 @@ class ChatManager:
         logger.info(f"User {username} ({user_id}) disconnected from group {group_id}")
         
         # Broadcast leave notification to remaining members
-        await self.broadcast_system_message(
+        await self.broadcast_member_event(
             group_id=group_id,
             message_type="member_left",
             user_id=user_id,
@@ -188,7 +188,7 @@ class ChatManager:
         for ws, user_id, username in disconnected:
             await self.disconnect(group_id, ws, user_id, username)
     
-    async def broadcast_system_message(
+    async def broadcast_member_event(
         self,
         group_id: UUID,
         message_type: str,
@@ -250,6 +250,42 @@ class ChatManager:
             message=message,
             exclude_websocket=exclude_websocket
         )
+    
+    async def broadcast_system_message(
+        self,
+        group_id: UUID,
+        message: dict
+    ) -> int:
+        """
+        Broadcast arbitrary system message to all group members.
+        Used for inter-service communication (e.g., safety alerts).
+        
+        Args:
+            group_id: Target group
+            message: Message payload (arbitrary JSON)
+            
+        Returns:
+            Number of members notified
+        """
+        connections = self.connections.get(group_id, set())
+        
+        if not connections:
+            logger.info(f"No active connections in group {group_id} for system message")
+            return 0
+        
+        # Send to all connected members
+        tasks = []
+        for ws, _, _ in connections:
+            tasks.append(ws.send_json(message))
+        
+        # Send all messages concurrently
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        # Count successful sends
+        success_count = sum(1 for r in results if not isinstance(r, Exception))
+        
+        logger.info(f"System message broadcast to {success_count}/{len(connections)} members in group {group_id}")
+        return success_count
     
     def check_rate_limit(self, user_id: UUID) -> bool:
         """

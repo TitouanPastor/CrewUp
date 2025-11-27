@@ -34,7 +34,11 @@ export default function HomePage() {
   const loadEvents = async () => {
     try {
       setLoading(true);
-      const data = await eventService.listEvents({ limit: 50 });
+      const data = await eventService.listEvents({ 
+        limit: 50,
+        include_ongoing: true,  // Show ongoing events
+        include_past: false,    // Don't show finished events on homepage
+      });
       setEvents(data.events);
     } catch (error) {
       console.error('Failed to load events:', error);

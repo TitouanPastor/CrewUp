@@ -1,9 +1,12 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Calendar, User, AlertTriangle, Moon, Sun } from 'lucide-react';
-import { useAppStore } from '../stores/appStore';
+import { Home, Calendar, User, AlertTriangle, Moon, Sun, CheckCircle, Loader2 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
+import SafetyAlertDialog from './SafetyAlertDialog';
+import { useActiveAlert } from '@/hooks/useActiveAlert';
+import { safetyService } from '@/services/safetyService';
+import { useToast } from '@/hooks/use-toast';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,11 +17,35 @@ import {
 export default function Navbar() {
   const location = useLocation();
   const { setTheme } = useTheme();
-  const { isPartyMode, togglePartyMode } = useAppStore();
+  const { toast } = useToast();
+  const { activeAlert, loading: loadingAlert, refresh: refreshAlert } = useActiveAlert();
+  
   const [isLongPressing, setIsLongPressing] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [showAlertDialog, setShowAlertDialog] = useState(false);
+  const [hasActiveEvents, setHasActiveEvents] = useState(true); // Optimistic default
+  const [isResolving, setIsResolving] = useState(false);
   const longPressTimer = useRef<number | null>(null);
   const progressInterval = useRef<number | null>(null);
+
+  // Listen for alert-resolved events from other components
+  useEffect(() => {
+    const handleAlertResolvedEvent = () => {
+      refreshAlert();
+    };
+    
+    const handleAlertCreatedEvent = () => {
+      refreshAlert();
+    };
+    
+    window.addEventListener('alert-resolved', handleAlertResolvedEvent);
+    window.addEventListener('alert-created', handleAlertCreatedEvent);
+    
+    return () => {
+      window.removeEventListener('alert-resolved', handleAlertResolvedEvent);
+      window.removeEventListener('alert-created', handleAlertCreatedEvent);
+    };
+  }, [refreshAlert]);
 
   const handleAlertStart = () => {
     setIsLongPressing(true);
@@ -29,11 +56,35 @@ export default function Navbar() {
       setProgress(currentProgress);
     }, 100);
 
-    longPressTimer.current = window.setTimeout(() => {
-      togglePartyMode();
+    longPressTimer.current = window.setTimeout(async () => {
       setIsLongPressing(false);
       setProgress(0);
       if (progressInterval.current) clearInterval(progressInterval.current);
+      
+      // If user has active alert: resolve it
+      if (activeAlert) {
+        try {
+          setIsResolving(true);
+          await safetyService.resolveAlert(activeAlert.id);
+          toast({
+            title: 'Alert resolved',
+            description: 'Your safety alert has been marked as resolved',
+          });
+          await refreshAlert(); // Refresh alert status
+        } catch (error: any) {
+          console.error('Failed to resolve alert:', error);
+          toast({
+            title: 'Failed to resolve alert',
+            description: error.response?.data?.detail || 'Please try again',
+            variant: 'destructive',
+          });
+        } finally {
+          setIsResolving(false);
+        }
+      } else {
+        // No active alert: open dialog to create one
+        setShowAlertDialog(true);
+      }
     }, 2000);
   };
 
@@ -93,13 +144,14 @@ export default function Navbar() {
 
             {/* Alert Button */}
             <Button
-              variant={isPartyMode ? "destructive" : "outline"}
+              variant={activeAlert ? "destructive" : "outline"}
               size="sm"
-              onMouseDown={handleAlertStart}
-              onMouseUp={handleAlertEnd}
-              onMouseLeave={handleAlertEnd}
-              onTouchStart={handleAlertStart}
-              onTouchEnd={handleAlertEnd}
+              onMouseDown={hasActiveEvents && !isResolving ? handleAlertStart : undefined}
+              onMouseUp={hasActiveEvents && !isResolving ? handleAlertEnd : undefined}
+              onMouseLeave={hasActiveEvents && !isResolving ? handleAlertEnd : undefined}
+              onTouchStart={hasActiveEvents && !isResolving ? handleAlertStart : undefined}
+              onTouchEnd={hasActiveEvents && !isResolving ? handleAlertEnd : undefined}
+              disabled={!hasActiveEvents || isResolving || loadingAlert}
               className="relative overflow-hidden ml-2"
             >
               <div
@@ -109,8 +161,24 @@ export default function Navbar() {
                   opacity: isLongPressing ? 1 : 0
                 }}
               />
-              <AlertTriangle className="w-4 h-4 mr-2 relative z-10" />
-              <span className="relative z-10">{isPartyMode ? 'Alert ON' : 'Hold 2s'}</span>
+              {isResolving ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 relative z-10 animate-spin" />
+                  <span className="relative z-10">Resolving...</span>
+                </>
+              ) : activeAlert ? (
+                <>
+                  <CheckCircle className="w-4 h-4 mr-2 relative z-10" />
+                  <span className="relative z-10">Hold to Resolve</span>
+                </>
+              ) : (
+                <>
+                  <AlertTriangle className="w-4 h-4 mr-2 relative z-10" />
+                  <span className="relative z-10">
+                    {!hasActiveEvents ? 'No Active Events' : 'Hold 2s'}
+                  </span>
+                </>
+              )}
             </Button>
 
             {/* Theme Toggle */}
@@ -137,6 +205,14 @@ export default function Navbar() {
           </div>
         </div>
       </div>
+
+      {/* Safety Alert Dialog */}
+      <SafetyAlertDialog
+        open={showAlertDialog}
+        onOpenChange={setShowAlertDialog}
+        onActiveEventsChange={setHasActiveEvents}
+        onAlertSent={refreshAlert} // Refresh active alert after sending
+      />
     </nav>
   );
 }

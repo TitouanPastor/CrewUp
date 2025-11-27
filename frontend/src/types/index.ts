@@ -88,15 +88,17 @@ export interface Review {
 }
 
 export interface SafetyAlert {
-  id: number;
-  user_id: number;
-  group_id: number;
+  id: string;
+  user_id: string;
+  event_id: string;
+  group_id: string;
+  alert_type: 'help' | 'medical' | 'harassment' | 'other';
+  message?: string;
   latitude?: number;
   longitude?: number;
-  alert_type: 'help' | 'emergency' | 'other';
-  message?: string;
   created_at: string;
   resolved_at?: string;
+  resolved: boolean;
   user?: User;
 }
 
