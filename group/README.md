@@ -11,7 +11,7 @@ Production-ready microservice for group management and real-time chat in the Cre
 
 ## Features
 
-- ✅ **Group CRUD** - Create, read, update groups for events
+- ✅ **Group CRUD** - Create, read, update groups for events.
 - ✅ **Membership** - Join, leave, member lists with admin roles
 - ✅ **Real-time Chat** - WebSocket-based messaging with typing indicators
 - ✅ **Message History** - Paginated retrieval with filtering
