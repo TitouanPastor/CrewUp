@@ -4,7 +4,7 @@ Event management microservice for the CrewUp application. Handles event creation
 
 ## Features
 
-- **Event CRUD**: Create, read, update, and delete events
+- **Event CRUD**: Create, read, update, and delete events.
 - **RSVP System**: Join/leave events with status (going, interested, not_going)
 - **Event Search**: Text-based and location-based event search
 - **Event Listing**: Filter events by type, date, creator, and more
