@@ -10,12 +10,12 @@ import { groupService, type Group, type ChatMessage } from '@/services/groupServ
 import { eventService } from '@/services/eventService';
 import { extractErrorMessage } from '@/utils/errorHandler';
 import { formatDistanceToNow } from 'date-fns';
+import keycloak from '@/keycloak';
 import type { Event } from '@/types';
 
 interface GroupWithDetails extends Group {
   lastMessage?: ChatMessage;
   event?: Event;
-  unreadCount?: number;
 }
 
 export default function GroupsPage() {
@@ -36,47 +36,60 @@ export default function GroupsPage() {
       // 1. Get all groups (without event filter to get user's groups)
       const { groups: allGroups } = await groupService.listGroups();
 
-      // 2. For each group, fetch last message and event details
-      const groupsWithDetails = await Promise.all(
-        allGroups.map(async (group) => {
-          try {
-            // Fetch last message
-            const { messages } = await groupService.getMessages(group.id, 1, 0);
-            const lastMessage = messages[0];
+      // 2. For each group, check membership and fetch details only if user is a member
+      const groupsWithDetailsPromises = allGroups.map(async (group): Promise<GroupWithDetails | null> => {
+        try {
+          // Check if user is a member of this group
+          const { members } = await groupService.getMembers(group.id);
+          const keycloakId = keycloak.tokenParsed?.sub;
+          const isMember = members.some((m) => m.keycloak_id === keycloakId);
 
-            // Fetch event details
-            let event: Event | undefined;
-            try {
-              event = await eventService.getEvent(group.event_id);
-            } catch {
-              // Event might be deleted or inaccessible
-              event = undefined;
-            }
-
-            return {
-              ...group,
-              lastMessage,
-              event,
-            };
-          } catch (error) {
-            // If we can't fetch details, return group without them
-            console.error(`Failed to load details for group ${group.id}:`, error);
-            return group;
+          // Skip this group if user is not a member
+          if (!isMember) {
+            return null;
           }
-        })
-      );
+
+          // Fetch last message
+          const { messages } = await groupService.getMessages(group.id, 1, 0);
+          const lastMessage = messages[0];
+
+          // Fetch event details
+          let event: Event | undefined;
+          try {
+            event = await eventService.getEvent(group.event_id);
+          } catch {
+            // Event might be deleted or inaccessible
+            event = undefined;
+          }
+
+          return {
+            ...group,
+            lastMessage,
+            event,
+          };
+        } catch (error) {
+          // If we can't fetch details (e.g., 403 not a member), skip this group
+          console.error(`Failed to load details for group ${group.id}:`, error);
+          return null;
+        }
+      });
+
+      const groupsWithDetails = await Promise.all(groupsWithDetailsPromises);
+
+      // Filter out null entries (groups where user is not a member)
+      const validGroups = groupsWithDetails.filter((g): g is GroupWithDetails => g !== null);
 
       // Sort by last message time (most recent first)
-      groupsWithDetails.sort((a, b) => {
-        const aMsg = (a as GroupWithDetails).lastMessage;
-        const bMsg = (b as GroupWithDetails).lastMessage;
+      validGroups.sort((a, b) => {
+        const aMsg = a.lastMessage;
+        const bMsg = b.lastMessage;
         if (!aMsg && !bMsg) return 0;
         if (!aMsg) return 1;
         if (!bMsg) return -1;
         return new Date(bMsg.sent_at).getTime() - new Date(aMsg.sent_at).getTime();
       });
 
-      setGroups(groupsWithDetails);
+      setGroups(validGroups);
     } catch (error) {
       console.error('Failed to load groups:', error);
       toast({
