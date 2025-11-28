@@ -1,11 +1,12 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Calendar, User, AlertTriangle } from 'lucide-react';
+import { Home, Calendar, User, AlertTriangle, MessageCircle } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import SafetyAlertDialog from './SafetyAlertDialog';
 
 const navItems = [
   { path: '/', icon: Home, label: 'Home' },
   { path: '/events', icon: Calendar, label: 'Events' },
+  { path: '/groups', icon: MessageCircle, label: 'Groups' },
   { path: '/profile', icon: User, label: 'Profile' },
 ];
 
