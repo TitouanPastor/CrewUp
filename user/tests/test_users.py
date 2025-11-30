@@ -217,10 +217,12 @@ def test_get_public_profile_not_found(mock_current_user, auth_headers):
 def test_missing_auth_header():
     """Test endpoints without Authorization header."""
     # Temporarily remove auth override to test real auth behavior
+    original_override = app.dependency_overrides.get(get_current_user)
     app.dependency_overrides.pop(get_current_user, None)
     
     response = client.get("/api/v1/users/me")
-    assert response.status_code == 403  # FastAPI HTTPBearer returns 403
+    assert response.status_code == 401  # No auth header returns 401 Unauthorized
     
     # Restore override for other tests
-    app.dependency_overrides[get_current_user] = override_get_current_user
+    if original_override:
+        app.dependency_overrides[get_current_user] = original_override

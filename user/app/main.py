@@ -60,6 +60,24 @@ app.add_exception_handler(Exception, generic_exception_handler)
 app.include_router(users_router, prefix="/api/v1")
 
 
+# Health check endpoint (no auth required)
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for monitoring."""
+    return {"status": "healthy", "service": "user-service"}
+
+
+# Root endpoint
+@app.get("/")
+async def root():
+    """Root endpoint with service info."""
+    return {
+        "service": "user-service",
+        "version": "1.0.0",
+        "docs": "/api/v1/users/docs"
+    }
+
+
 # Startup event
 @app.on_event("startup")
 async def startup_event():
