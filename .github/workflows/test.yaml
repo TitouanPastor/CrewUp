@@ -106,11 +106,30 @@ jobs:
           if [ -f "run_tests.sh" ]; then
             chmod +x run_tests.sh
             # Run unit tests only (skip integration tests requiring external services)
-            ./run_tests.sh unit 2>/dev/null || pytest tests/ -v --tb=short --ignore=tests/test_integration.py --ignore=tests/test_integration_auth.py 2>/dev/null || pytest tests/ -v --tb=short
+            ./run_tests.sh unit 2>/dev/null || pytest tests/ -v --tb=short --cov=app --cov-report=term --ignore=tests/test_integration.py --ignore=tests/test_integration_auth.py 2>/dev/null || pytest tests/ -v --tb=short --cov=app --cov-report=term
           else
             # For services without run_tests.sh, run all tests
-            pytest tests/ -v --tb=short --cov=app --cov-report=term-missing
+            pytest tests/ -v --tb=short --cov=app --cov-report=term
           fi
+      
+      - name: Generate coverage report
+        if: always()
+        working-directory: ./${{ matrix.service }}
+        run: |
+          # Generate coverage summary for this service
+          if [ -f ".coverage" ]; then
+            coverage report --format=markdown > coverage-report.md || echo "No coverage data" > coverage-report.md
+          else
+            echo "No coverage data available" > coverage-report.md
+          fi
+      
+      - name: Upload coverage markdown
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-md-${{ matrix.service }}
+          path: ${{ matrix.service }}/coverage-report.md
+          if-no-files-found: ignore
       
       - name: Upload coverage report
         if: always()
@@ -128,6 +147,46 @@ jobs:
     if: always()
     
     steps:
+      - name: Download all coverage reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-md-*
+          path: coverage-reports
+      
+      - name: Display coverage in summary
+        if: always()
+        run: |
+          echo "# 📊 Test Results & Coverage" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Overall status
+          if [ "${{ needs.test-services.result }}" == "success" ]; then
+            echo "## ✅ All microservice tests passed!" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## ❌ Some tests failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Coverage for each service
+          echo "## Coverage by Service" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          for service in event group safety user rating; do
+            coverage_file="coverage-reports/coverage-md-${service}/coverage-report.md"
+            if [ -f "$coverage_file" ]; then
+              echo "### 📦 ${service^} Service" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo '```' >> $GITHUB_STEP_SUMMARY
+              cat "$coverage_file" >> $GITHUB_STEP_SUMMARY
+              echo '```' >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "### 📦 ${service^} Service" >> $GITHUB_STEP_SUMMARY
+              echo "No coverage data available" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+      
       - name: Check test results
         run: |
           if [ "${{ needs.test-services.result }}" != "success" ]; then
@@ -135,14 +194,3 @@ jobs:
             exit 1
           fi
           echo "✅ All tests passed!"
-      
-      - name: Post result
-        if: always()
-        run: |
-          echo "### Test Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ needs.test-services.result }}" == "success" ]; then
-            echo "✅ All microservice tests passed successfully!" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "❌ Some tests failed. Check the logs above." >> $GITHUB_STEP_SUMMARY
-          fi
