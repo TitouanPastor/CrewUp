@@ -13,6 +13,12 @@ NC='\033[0m' # No Color
 # Default to all tests
 TEST_TYPE="${1:-all}"
 
+# Detect if running in CI
+if [ "$CI" = "true" ]; then
+    echo -e "${YELLOW}Running in CI environment - unit tests only${NC}"
+    TEST_TYPE="unit"
+fi
+
 echo "============================================================"
 echo "Group & Chat Service - Test Suite"
 echo "============================================================"
@@ -20,8 +26,19 @@ echo ""
 
 # Function to run unit tests
 run_unit_tests() {
-    echo -e "${YELLOW}Running unit tests (no DB required)...${NC}"
+    echo -e "${YELLOW}Running unit tests (no external services required)...${NC}"
+    
+    # Override DATABASE_URL if not set (for GitHub Actions)
+    export DATABASE_URL="${DATABASE_URL:-postgresql://crewup:crewup_dev_password@localhost:5432/crewup}"
+    export TESTING="true"
+    
     pytest tests/test_api.py -v \
+        --cov=app \
+        --cov-report=html \
+        --cov-report=term-missing:skip-covered \
+        --tb=short \
+        --color=yes 2>/dev/null || \
+    pytest tests/ -v --ignore=tests/test_integration.py \
         --cov=app \
         --cov-report=html \
         --cov-report=term-missing:skip-covered \
@@ -69,30 +86,30 @@ case "$TEST_TYPE" in
         run_integration_tests
         ;;
     all)
-        # Run combined test suite so coverage is computed across unit+integration
-        echo -e "${YELLOW}[0/3] Preparing combined coverage run...${NC}"
-        # Ensure .env.test and service are available for integration parts
-        if [ ! -f .env.test ]; then
-            echo -e "${RED}✗ .env.test not found${NC}"
-            echo "Create it with required environment variables"
-            exit 1
+        if [ "$CI" = "true" ]; then
+            echo -e "${YELLOW}CI detected: running unit tests only${NC}"
+            run_unit_tests
+        else
+            # Check if integration tests are possible
+            if [ -f .env.test ] && curl -s http://localhost:8002/api/v1/groups/health > /dev/null 2>&1; then
+                echo -e "${YELLOW}Running full test suite (unit + integration)...${NC}"
+                echo ""
+                export $(grep -v '^#' .env.test | xargs)
+                rm -f .coverage
+                
+                pytest tests/ -v \
+                    --cov=app \
+                    --cov-report=html \
+                    --cov-report=term-missing:skip-covered \
+                    --tb=short \
+                    --color=yes
+            else
+                echo -e "${YELLOW}Integration tests not available${NC}"
+                echo -e "${YELLOW}Running unit tests only${NC}"
+                echo ""
+                run_unit_tests
+            fi
         fi
-        if ! curl -s http://localhost:8002/api/v1/groups/health > /dev/null; then
-            echo -e "${RED}✗ Service is not running on localhost:8002${NC}"
-            echo "Start it with: uvicorn app.main:app --host 0.0.0.0 --port 8002"
-            exit 1
-        fi
-        echo -e "${GREEN}✓ Preconditions OK${NC}"
-
-        echo -e "${YELLOW}Running full test suite (unit + integration) with combined coverage...${NC}"
-        # Remove old coverage data to ensure a clean report
-        rm -f .coverage
-        pytest tests/ -v \
-            --cov=app \
-            --cov-report=html \
-            --cov-report=term-missing:skip-covered \
-            --tb=short \
-            --color=yes
         ;;
     *)
         echo -e "${RED}Invalid option: $TEST_TYPE${NC}"
@@ -103,12 +120,18 @@ esac
 
 # Summary
 echo "============================================================"
-if [ "$TEST_TYPE" = "integration" ] || [ "$TEST_TYPE" = "all" ]; then
+if [ "$TEST_TYPE" = "integration" ] || ([ "$TEST_TYPE" = "all" ] && [ "$CI" != "true" ] && [ -f .env.test ]); then
     echo -e "${GREEN}✓ Tests completed!${NC}"
     echo ""
     echo "Coverage report: htmlcov/index.html"
-    echo "View with: open htmlcov/index.html (Mac) or xdg-open htmlcov/index.html (Linux)"
 else
     echo -e "${GREEN}✓ Unit tests completed!${NC}"
+    if [ "$TEST_TYPE" = "all" ] && [ "$CI" != "true" ]; then
+        echo ""
+        echo -e "${YELLOW}Tip: To run integration tests:${NC}"
+        echo "1. Start the service: uvicorn app.main:app --port 8002"
+        echo "2. Create .env.test with DATABASE_URL"
+        echo "3. Run: ./run_tests.sh integration"
+    fi
 fi
 echo "============================================================"
