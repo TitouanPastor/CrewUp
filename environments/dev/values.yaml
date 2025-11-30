@@ -55,7 +55,7 @@ services:
     enabled: true
     replicas: 1
     port: 8000
-    imageTag: "latest"  # Auto-updated by CI/CD
+    imageTag: "905f7d2"
 
 # Frontend
 frontend:
