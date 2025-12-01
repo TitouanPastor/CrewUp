@@ -1,7 +1,9 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Calendar, User, AlertTriangle, MessageCircle } from 'lucide-react';
+import { Home, Calendar, User, AlertTriangle, MessageCircle, Shield } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import SafetyAlertDialog from './SafetyAlertDialog';
+import ModeratorModal from './ModeratorModal';
+import { isModerator } from '@/utils/moderatorCheck';
 
 const navItems = [
   { path: '/', icon: Home, label: 'Home' },
@@ -15,9 +17,13 @@ export default function BottomNav() {
   const [isLongPressing, setIsLongPressing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [showAlertDialog, setShowAlertDialog] = useState(false);
+  const [showModeratorModal, setShowModeratorModal] = useState(false);
   const [hasActiveEvents, setHasActiveEvents] = useState(true); // Optimistic default
   const longPressTimer = useRef<number | null>(null);
   const progressInterval = useRef<number | null>(null);
+
+  // Check if user is a moderator
+  const userIsModerator = isModerator();
 
   const handleAlertStart = () => {
     setIsLongPressing(true);
@@ -76,6 +82,17 @@ export default function BottomNav() {
             );
           })}
           
+          {/* Moderator Button - Only visible for moderators */}
+          {userIsModerator && (
+            <button
+              onClick={() => setShowModeratorModal(true)}
+              className="relative flex flex-col items-center justify-center flex-1 h-full gap-0.5 transition-colors text-muted-foreground"
+            >
+              <Shield className="w-6 h-6 relative z-10" strokeWidth={2} />
+              <span className="text-[11px] font-medium relative z-10">Mod</span>
+            </button>
+          )}
+
           {/* Alert Button */}
           <button
             onTouchStart={hasActiveEvents ? handleAlertStart : undefined}
@@ -89,9 +106,9 @@ export default function BottomNav() {
                 : 'text-muted-foreground'
             }`}
           >
-            <div 
+            <div
               className="absolute inset-0 bg-destructive/20 transition-all"
-              style={{ 
+              style={{
                 height: `${progress}%`,
                 bottom: 0,
                 top: 'auto',
@@ -110,6 +127,14 @@ export default function BottomNav() {
         onOpenChange={setShowAlertDialog}
         onActiveEventsChange={setHasActiveEvents}
       />
+
+      {/* Moderator Modal - Only rendered for moderators */}
+      {userIsModerator && (
+        <ModeratorModal
+          open={showModeratorModal}
+          onOpenChange={setShowModeratorModal}
+        />
+      )}
     </>
   );
 }

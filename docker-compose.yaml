@@ -113,6 +113,25 @@ services:
       postgres:
         condition: service_healthy
 
+  # Moderation service
+  moderation:
+    build:
+      context: ./moderation
+      dockerfile: Dockerfile
+    container_name: crewup-moderation
+    environment:
+      DATABASE_URL: postgresql://crewup:crewup_dev_password@crewup-db:5432/crewup
+      KEYCLOAK_SERVER_URL: https://keycloak.ltu-m7011e-3.se
+      KEYCLOAK_REALM: crewup
+      KEYCLOAK_CLIENT_ID: crewup-test
+    ports:
+      - "8006:8000"
+    networks:
+      - crewup-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   # Frontend service (React + Nginx)
   frontend:
     build:
@@ -129,6 +148,7 @@ services:
       - group
       - rating
       - safety
+      - moderation
 
 # Define custom network
 networks:
