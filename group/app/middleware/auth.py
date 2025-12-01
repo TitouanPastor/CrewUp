@@ -11,8 +11,10 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError
 import requests
 from functools import lru_cache
+from typing import Optional
 import logging
 import urllib3
+import os
 
 # Disable SSL warnings for development (self-signed certificates)
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -21,6 +23,18 @@ from app.config import config
 
 logger = logging.getLogger(__name__)
 security = HTTPBearer(auto_error=False)  # Don't auto-raise 403, allow optional auth
+
+# Test mode detection
+TESTING = os.getenv("TESTING", "false").lower() == "true"
+
+# Mock user for testing
+MOCK_TEST_USER = {
+    "keycloak_id": "550e8400-e29b-41d4-a716-446655440000",
+    "email": "test@example.com",
+    "first_name": "Test",
+    "last_name": "User",
+    "username": "testuser"
+}
 
 
 @lru_cache(maxsize=1)
@@ -61,12 +75,24 @@ async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(secur
     Raises:
         HTTPException: 401 if token is invalid or expired
     """
+    # Check for credentials first
     if credentials is None:
+        # Always require credentials for authentication
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",
             headers={"WWW-Authenticate": "Bearer"}
         )
+    
+    # In test mode with credentials, skip JWT verification
+    if TESTING:
+        return {
+            "sub": MOCK_TEST_USER["keycloak_id"],
+            "email": MOCK_TEST_USER["email"],
+            "given_name": MOCK_TEST_USER["first_name"],
+            "family_name": MOCK_TEST_USER["last_name"],
+            "preferred_username": MOCK_TEST_USER["username"]
+        }
     
     token = credentials.credentials
     

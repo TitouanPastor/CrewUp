@@ -9,12 +9,23 @@ These tests require:
 
 Run with: pytest tests/test_integration_auth.py -v
 Or use: ./run_tests.sh integration
+
+Note: These tests are marked as integration tests and will be skipped
+if the environment is not properly configured (missing KEYCLOAK_SERVER_URL).
 """
 import pytest
+import os
 from uuid import UUID
 from datetime import datetime, timedelta, timezone
 import requests
 from jose import jwt
+
+
+# Skip all tests in this module if Keycloak is not configured
+pytestmark = pytest.mark.skipif(
+    not os.getenv("KEYCLOAK_SERVER_URL"),
+    reason="Integration tests require KEYCLOAK_SERVER_URL environment variable"
+)
 
 
 @pytest.fixture(scope="session")
@@ -246,6 +257,10 @@ class TestAlertCRUD:
         conn = psycopg2.connect(db_url)
         cursor = conn.cursor()
         
+        # Initialize variables for cleanup
+        event_id = None
+        group_id = None
+        
         try:
             # Get user1 ID
             user1 = keycloak_tokens["user1"]
@@ -333,10 +348,12 @@ class TestAlertCRUD:
             
         finally:
             # Cleanup: Delete test data
-            cursor.execute("DELETE FROM safety_alerts WHERE group_id = %s", (group_id,))
-            cursor.execute("DELETE FROM group_members WHERE group_id = %s", (group_id,))
-            cursor.execute("DELETE FROM groups WHERE id = %s", (group_id,))
-            cursor.execute("DELETE FROM events WHERE id = %s", (event_id,))
+            if group_id:
+                cursor.execute("DELETE FROM safety_alerts WHERE group_id = %s", (group_id,))
+                cursor.execute("DELETE FROM group_members WHERE group_id = %s", (group_id,))
+                cursor.execute("DELETE FROM groups WHERE id = %s", (group_id,))
+            if event_id:
+                cursor.execute("DELETE FROM events WHERE id = %s", (event_id,))
             conn.commit()
             cursor.close()
             conn.close()
@@ -359,6 +376,10 @@ class TestAlertCRUD:
         db_url = integration_env.get("database_url", "postgresql://crewup:crewup_dev_password@localhost:5432/crewup")
         conn = psycopg2.connect(db_url)
         cursor = conn.cursor()
+        
+        # Initialize variables for cleanup
+        event_id = None
+        group_id = None
         
         try:
             # Get user1 ID
@@ -423,10 +444,12 @@ class TestAlertCRUD:
             
         finally:
             # Cleanup
-            cursor.execute("DELETE FROM safety_alerts WHERE group_id = %s", (group_id,))
-            cursor.execute("DELETE FROM group_members WHERE group_id = %s", (group_id,))
-            cursor.execute("DELETE FROM groups WHERE id = %s", (group_id,))
-            cursor.execute("DELETE FROM events WHERE id = %s", (event_id,))
+            if group_id:
+                cursor.execute("DELETE FROM safety_alerts WHERE group_id = %s", (group_id,))
+                cursor.execute("DELETE FROM group_members WHERE group_id = %s", (group_id,))
+                cursor.execute("DELETE FROM groups WHERE id = %s", (group_id,))
+            if event_id:
+                cursor.execute("DELETE FROM events WHERE id = %s", (event_id,))
             conn.commit()
             cursor.close()
             conn.close()
