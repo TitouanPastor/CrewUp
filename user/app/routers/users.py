@@ -137,9 +137,17 @@ async def get_current_user_profile(
         UserResponse: Complete user profile
     
     Raises:
+        403: Forbidden
         404: User profile not found (user needs to call POST /users first)
     """
     user = db.query(User).filter(User.keycloak_id == current_user["keycloak_id"]).first()
+
+    if user and user.is_banned :
+        logger.warning(f"User with keycloak_id={current_user['keycloak_id']} is banned")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You have been banned from CrewUp."
+        )
     
     if not user:
         logger.warning(f"User profile not found for keycloak_id={current_user['keycloak_id']}")
@@ -172,11 +180,19 @@ async def update_current_user_profile(
         UserResponse: Updated user profile
     
     Raises:
+        403: Forbidden
         404: User not found
         422: Validation error (handled by Pydantic)
     """
     user = db.query(User).filter(User.keycloak_id == current_user["keycloak_id"]).first()
     
+    if user and user.is_banned :
+        logger.warning(f"User with keycloak_id={current_user['keycloak_id']} is banned")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You have been banned from CrewUp."
+        )
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

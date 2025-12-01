@@ -3,14 +3,13 @@ kind: Service
 metadata:
   name: rabbitmq-service-api
   labels:
-    app: rabbitmq 
+    app: rabbitmq
 spec:
   selector:
     app: rabbitmq
-  type: NodePort
+  type: ClusterIP  # Internal only - no external access
   ports:
-    - name: amqp 
+    - name: amqp
       protocol: TCP
       port: 5672
       targetPort: 5672
-      nodePort: 30000

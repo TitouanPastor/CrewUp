@@ -22,6 +22,7 @@ import logging
 
 from app.config import config
 from app.routers import users_router
+from app.services import start_consumer, get_consumer
 from app.utils import (
     setup_logging,
     validation_exception_handler,
@@ -81,17 +82,34 @@ async def root():
 # Startup event
 @app.on_event("startup")
 async def startup_event():
-    """Log application startup."""
+    """Log application startup and start RabbitMQ consumer."""
     logger.info(f"User Service starting on {config.get_database_url().split('@')[1]}")
     logger.info(f"Keycloak server: {config.KEYCLOAK_SERVER_URL}")
     logger.info(f"CORS origins: {config.CORS_ORIGINS}")
+    logger.info(f"RabbitMQ URL: {config.RABBITMQ_URL}")
+
+    # Start RabbitMQ consumer for moderation commands
+    try:
+        start_consumer()
+        logger.info("RabbitMQ consumer started successfully")
+    except Exception as e:
+        logger.error(f"Failed to start RabbitMQ consumer: {e}")
+        logger.warning("User service will continue without moderation queue support")
 
 
 # Shutdown event
 @app.on_event("shutdown")
 async def shutdown_event():
-    """Log application shutdown."""
+    """Log application shutdown and stop RabbitMQ consumer."""
     logger.info("User Service shutting down")
+
+    # Stop RabbitMQ consumer
+    try:
+        consumer = get_consumer()
+        consumer.stop_consuming()
+        logger.info("RabbitMQ consumer stopped")
+    except Exception as e:
+        logger.error(f"Error stopping RabbitMQ consumer: {e}")
 
 
 if __name__ == "__main__":

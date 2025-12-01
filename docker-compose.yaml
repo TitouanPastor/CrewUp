@@ -21,6 +21,24 @@ services:
       timeout: 5s
       retries: 5
 
+  # RabbitMQ Message Queue
+  rabbitmq:
+    image: rabbitmq:3.12-management
+    container_name: crewup-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"   # AMQP port
+      - "15672:15672" # Management UI
+    networks:
+      - crewup-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # Event service
   event:
     build:
@@ -105,12 +123,15 @@ services:
       KEYCLOAK_SERVER_URL: https://keycloak.ltu-m7011e-3.se
       KEYCLOAK_REALM: crewup
       KEYCLOAK_CLIENT_ID: crewup-test
+      RABBITMQ_URL: amqp://guest:guest@crewup-rabbitmq:5672/
     ports:
       - "8005:8000"
     networks:
       - crewup-network
     depends_on:
       postgres:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
 
   # Moderation service

@@ -61,6 +61,7 @@ class User(Base):
     # interests = Column(ARRAY(Text))  # PostgreSQL only, skip for tests
     reputation = Column(DECIMAL(3, 2), default=0.00)
     is_active = Column(Boolean, default=True)
+    is_banned = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

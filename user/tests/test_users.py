@@ -218,10 +218,52 @@ def test_missing_auth_header():
     # Temporarily remove auth override to test real auth behavior
     original_override = app.dependency_overrides.get(get_current_user)
     app.dependency_overrides.pop(get_current_user, None)
-    
+
     response = client.get("/api/v1/users/me")
     assert response.status_code == 401  # No auth header returns 401 Unauthorized
-    
+
     # Restore override for other tests
     if original_override:
         app.dependency_overrides[get_current_user] = original_override
+
+
+def test_get_current_user_banned(mock_current_user, auth_headers):
+    """Test GET /users/me when user is banned."""
+    # Create user
+    client.post("/api/v1/users", headers=auth_headers)
+
+    # Manually ban the user in the database
+    with engine.connect() as conn:
+        conn.execute(
+            text("UPDATE users SET is_banned = TRUE WHERE keycloak_id = 'test-keycloak-123'")
+        )
+        conn.commit()
+
+    # Try to get profile
+    response = client.get("/api/v1/users/me", headers=auth_headers)
+
+    assert response.status_code == 403
+    assert "banned" in response.json()["detail"].lower()
+
+
+def test_update_profile_when_banned(mock_current_user, auth_headers):
+    """Test PUT /users/me when user is banned."""
+    # Create user
+    client.post("/api/v1/users", headers=auth_headers)
+
+    # Manually ban the user in the database
+    with engine.connect() as conn:
+        conn.execute(
+            text("UPDATE users SET is_banned = TRUE WHERE keycloak_id = 'test-keycloak-123'")
+        )
+        conn.commit()
+
+    # Try to update profile
+    update_data = {
+        "bio": "Trying to update while banned",
+        "interests": ["hacking"]
+    }
+    response = client.put("/api/v1/users/me", json=update_data, headers=auth_headers)
+
+    assert response.status_code == 403
+    assert "banned" in response.json()["detail"].lower()

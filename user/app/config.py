@@ -57,6 +57,12 @@ class Config:
         "https://crewup.ltu-m7011e-3.se",  # Production
     ]
 
+    # RabbitMQ configuration
+    RABBITMQ_URL: str = os.getenv(
+        "RABBITMQ_URL",
+        "amqp://guest:guest@localhost:5672/"
+    )
+
 
 # Create singleton instance
 config = Config()

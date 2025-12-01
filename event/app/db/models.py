@@ -26,6 +26,7 @@ class User(Base):
     interests = Column(ARRAY(Text), default=list)
     reputation = Column(DECIMAL(3, 2), default=0.00)
     is_active = Column(Boolean, default=True)
+    is_banned = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime(timezone=False), server_default=func.now())
     updated_at = Column(DateTime(timezone=False), server_default=func.now(), onupdate=func.now())
 
