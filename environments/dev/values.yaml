@@ -37,7 +37,7 @@ services:
     enabled: true
     replicas: 1
     port: 8000
-    imageTag: "c25330f"
+    imageTag: "a0895b7"
     
   rating:
     enabled: true
@@ -49,13 +49,13 @@ services:
     enabled: true
     replicas: 1
     port: 8000
-    imageTag: "47058b5"
+    imageTag: "a0895b7"
     
   user:
     enabled: true
     replicas: 1
     port: 8000
-    imageTag: "905f7d2"
+    imageTag: "a0895b7"
 
 # Frontend
 frontend:
