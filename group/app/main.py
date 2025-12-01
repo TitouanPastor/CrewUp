@@ -64,6 +64,25 @@ app.include_router(groups_router, prefix="/api/v1")
 app.include_router(chat_router, prefix="/api/v1")
 app.include_router(internal_router, prefix="/api/v1/groups")  # Internal routes under /api/v1/groups
 
+
+# Health check endpoint (no auth required)
+@app.get("/api/v1/groups/health")
+async def health_check():
+    """Health check endpoint for monitoring."""
+    return {"status": "healthy", "service": "group-service"}
+
+
+# Root endpoint
+@app.get("/")
+async def root():
+    """Root endpoint with service info."""
+    return {
+        "service": "group-service",
+        "version": "1.0.0",
+        "docs": "/api/v1/groups/docs"
+    }
+
+
 # Startup event
 @app.on_event("startup")
 async def startup_event():
