@@ -8,7 +8,7 @@ Tests cover:
 - Get public profile (GET /users/{id})
 - Error cases (401, 404, 422)
 
-Uses real PostgreSQL database (like the professor's tutorial).
+Uses real PostgreSQL database for testing.
 """
 import pytest
 import os
@@ -20,8 +20,7 @@ from app.main import app
 from app.db.database import Base, get_db
 from app.middleware.auth import get_current_user
 
-# Test database (PostgreSQL - create it manually first)
-# Run: psql -U crewup -d crewup -c "CREATE DATABASE test_crewup;"
+# Test database (PostgreSQL)
 TEST_DATABASE_URL = os.getenv(
     "TEST_DATABASE_URL",
     "postgresql://crewup:crewup_dev_password@localhost:5432/crewup"
@@ -62,21 +61,21 @@ client = TestClient(app)
 @pytest.fixture(scope="function", autouse=True)
 def setup_database():
     """
-    Create tables before each test, drop after.
-    Uses real PostgreSQL like the professor's tutorial.
+    Ensure tables exist before tests.
+    Does NOT drop tables - keeps data intact for other services.
     """
     # Create uuid extension if not exists
     with engine.connect() as conn:
         conn.execute(text('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"'))
         conn.commit()
     
-    # Create all tables
+    # Create tables if they don't exist (won't affect existing data)
     Base.metadata.create_all(bind=engine)
     yield
     
-    # Drop all tables after test (CASCADE to handle foreign keys)
+    # Cleanup: Only delete test user data, don't drop tables
     with engine.connect() as conn:
-        conn.execute(text('DROP TABLE IF EXISTS users CASCADE'))
+        conn.execute(text("DELETE FROM users WHERE keycloak_id = 'test-keycloak-123'"))
         conn.commit()
 
 

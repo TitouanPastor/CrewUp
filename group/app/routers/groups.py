@@ -259,6 +259,15 @@ async def leave_group(
     db: Session = Depends(get_db)
 ):
     """Leave a group."""
+    # Check if group exists
+    group = db.query(Group).filter(Group.id == group_id).first()
+    
+    if not group:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Group {group_id} not found"
+        )
+    
     # Get user ID from database using keycloak_id
     from app.db.models import User
     user = db.query(User).filter(User.keycloak_id == current_user["keycloak_id"]).first()
