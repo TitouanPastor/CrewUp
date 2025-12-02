@@ -59,6 +59,7 @@ jobs:
           RATING_TAG=$(grep -A 5 "^  rating:" "$SOURCE_FILE" | grep "imageTag:" | sed 's/.*imageTag:[[:space:]]*"\(.*\)".*/\1/')
           SAFETY_TAG=$(grep -A 5 "^  safety:" "$SOURCE_FILE" | grep "imageTag:" | sed 's/.*imageTag:[[:space:]]*"\(.*\)".*/\1/')
           USER_TAG=$(grep -A 5 "^  user:" "$SOURCE_FILE" | grep "imageTag:" | sed 's/.*imageTag:[[:space:]]*"\(.*\)".*/\1/')
+          MODERATION_TAG=$(grep -A 5 "^  moderation:" "$SOURCE_FILE" | grep "imageTag:" | sed 's/.*imageTag:[[:space:]]*"\(.*\)".*/\1/')
           
           echo "FRONTEND_TAG=$FRONTEND_TAG" >> $GITHUB_ENV
           echo "EVENT_TAG=$EVENT_TAG" >> $GITHUB_ENV
@@ -66,6 +67,7 @@ jobs:
           echo "RATING_TAG=$RATING_TAG" >> $GITHUB_ENV
           echo "SAFETY_TAG=$SAFETY_TAG" >> $GITHUB_ENV
           echo "USER_TAG=$USER_TAG" >> $GITHUB_ENV
+          echo "MODERATION_TAG=$MODERATION_TAG" >> $GITHUB_ENV
           
           echo "📦 Extracted tags from ${{ github.event.inputs.source_env }}:"
           echo "  Frontend: $FRONTEND_TAG"
@@ -74,6 +76,7 @@ jobs:
           echo "  Rating: $RATING_TAG"
           echo "  Safety: $SAFETY_TAG"
           echo "  User: $USER_TAG"
+          echo "  Moderation: $MODERATION_TAG"
       
       - name: Update target environment image tags
         run: |
@@ -88,6 +91,7 @@ jobs:
           sed -i "/^  rating:/,/^  [a-z]/ s/^\(    imageTag: \).*/\1\"$RATING_TAG\"/" "$TARGET_FILE"
           sed -i "/^  safety:/,/^  [a-z]/ s/^\(    imageTag: \).*/\1\"$SAFETY_TAG\"/" "$TARGET_FILE"
           sed -i "/^  user:/,/^  [a-z]/ s/^\(    imageTag: \).*/\1\"$RATING_TAG\"/" "$TARGET_FILE"
+          sed -i "/^  moderation:/,/^  [a-z]/ s/^\(    imageTag: \).*/\1\"$RATING_TAG\"/" "$TARGET_FILE"
           
           echo "✅ Updated $TARGET_FILE with tags from ${{ github.event.inputs.source_env }}"
       
