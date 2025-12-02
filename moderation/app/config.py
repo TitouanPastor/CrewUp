@@ -57,11 +57,47 @@ class Config:
     ]
 
     # RabbitMQ configuration
-    RABBITMQ_HOST: str = os.getenv("RABBITMQ_HOST", "localhost")
-    RABBITMQ_PORT: int = int(os.getenv("RABBITMQ_PORT", "5672"))
-    RABBITMQ_USER: str = os.getenv("RABBITMQ_USER", "guest")
-    RABBITMQ_PASSWORD: str = os.getenv("RABBITMQ_PASSWORD", "guest")
-    RABBITMQ_VHOST: str = os.getenv("RABBITMQ_VHOST", "/")
+    @staticmethod
+    def get_rabbitmq_config() -> dict:
+        """
+        Get RabbitMQ connection parameters.
+
+        Priority:
+        1. RABBITMQ_URL (full connection string like amqp://user:pass@host:port/vhost)
+        2. Individual RABBITMQ_* variables
+        """
+        rabbitmq_url = os.getenv("RABBITMQ_URL")
+        if rabbitmq_url:
+            # Parse RABBITMQ_URL: amqp://user:pass@host:port/vhost
+            # Example: amqp://guest:guest@crewup-rabbitmq:5672/
+            import re
+            match = re.match(r'amqp://([^:]+):([^@]+)@([^:]+):(\d+)(/.*)?', rabbitmq_url)
+            if match:
+                user, password, host, port, vhost = match.groups()
+                return {
+                    'host': host,
+                    'port': int(port),
+                    'user': user,
+                    'password': password,
+                    'vhost': vhost or '/'
+                }
+
+        # Fall back to individual variables
+        return {
+            'host': os.getenv("RABBITMQ_HOST", "localhost"),
+            'port': int(os.getenv("RABBITMQ_PORT", "5672")),
+            'user': os.getenv("RABBITMQ_USER", "guest"),
+            'password': os.getenv("RABBITMQ_PASSWORD", "guest"),
+            'vhost': os.getenv("RABBITMQ_VHOST", "/")
+        }
+
+    # Get RabbitMQ config at startup
+    _rabbitmq_config = get_rabbitmq_config.__func__()
+    RABBITMQ_HOST: str = _rabbitmq_config['host']
+    RABBITMQ_PORT: int = _rabbitmq_config['port']
+    RABBITMQ_USER: str = _rabbitmq_config['user']
+    RABBITMQ_PASSWORD: str = _rabbitmq_config['password']
+    RABBITMQ_VHOST: str = _rabbitmq_config['vhost']
 
     # RabbitMQ exchanges and queues
     USER_BAN_EXCHANGE: str = "user.ban"

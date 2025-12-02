@@ -1,7 +1,7 @@
 """
 RabbitMQ consumer for moderation commands.
 
-Listens to the 'user.moderation' queue for ban/unban commands.
+Listens to the 'user.ban.queue' queue for ban/unban commands.
 """
 import json
 import pika
@@ -22,12 +22,15 @@ class ModerationConsumer:
 
     Message format:
     {
-        "action": "ban" | "unban",
-        "user_id": "keycloak-user-id"
+        "action": "ban_user" | "unban_user",
+        "user_keycloak_id": "keycloak-user-id",
+        "moderator_keycloak_id": "moderator-keycloak-id",
+        "reason": "reason text",
+        "ban": true | false
     }
     """
 
-    def __init__(self, rabbitmq_url: str, queue_name: str = "user.moderation"):
+    def __init__(self, rabbitmq_url: str, queue_name: str = "user.ban.queue"):
         """
         Initialize the moderation consumer.
 
@@ -72,39 +75,40 @@ class ModerationConsumer:
             # Parse message
             message = json.loads(body.decode('utf-8'))
             action = message.get('action')
-            user_id = message.get('user_id')
+            user_keycloak_id = message.get('user_keycloak_id')
+            ban = message.get('ban')
 
-            if not action or not user_id:
+            if not action or not user_keycloak_id or ban is None:
                 logger.error(f"Invalid message format: {message}")
                 ch.basic_ack(delivery_tag=method.delivery_tag)
                 return
 
-            if action not in ['ban', 'unban']:
+            if action not in ['ban_user', 'unban_user']:
                 logger.error(f"Unknown action: {action}")
                 ch.basic_ack(delivery_tag=method.delivery_tag)
                 return
 
             # Find user by keycloak_id
-            user = db.query(User).filter(User.keycloak_id == user_id).first()
+            user = db.query(User).filter(User.keycloak_id == user_keycloak_id).first()
 
             if not user:
-                logger.warning(f"User not found: {user_id}")
+                logger.warning(f"User not found: {user_keycloak_id}")
                 ch.basic_ack(delivery_tag=method.delivery_tag)
                 return
 
             # Update ban status (with idempotency check)
-            is_banned = (action == 'ban')
+            is_banned = ban
 
             # Check if user is already in the desired state
             if user.is_banned == is_banned:
-                logger.warning(f"User {user_id} is already {'banned' if is_banned else 'unbanned'}")
+                logger.warning(f"User {user_keycloak_id} is already {'banned' if is_banned else 'unbanned'}")
                 ch.basic_ack(delivery_tag=method.delivery_tag)
                 return
 
             user.is_banned = is_banned
             db.commit()
 
-            logger.info(f"User {user_id} {'banned' if is_banned else 'unbanned'} successfully")
+            logger.info(f"User {user_keycloak_id} {'banned' if is_banned else 'unbanned'} successfully")
 
             # Acknowledge message
             ch.basic_ack(delivery_tag=method.delivery_tag)

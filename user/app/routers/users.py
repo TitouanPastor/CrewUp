@@ -220,6 +220,65 @@ async def update_current_user_profile(
         )
 
 
+@router.get("/search", response_model=dict)
+async def search_users(
+    query: str,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Search for users by name or email (Moderator only).
+
+    This endpoint is restricted to users with the Moderator role.
+    Searches first_name, last_name, and email fields.
+
+    Args:
+        query: Search query string (name or email)
+        current_user: Authenticated user (must have Moderator role)
+        db: Database session
+
+    Returns:
+        dict: List of users matching the search query with their ban status
+
+    Raises:
+        400: Empty query
+    """
+
+    if not query or not query.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Search query cannot be empty"
+        )
+
+    # Search users by name or email (case-insensitive)
+    search_pattern = f"%{query.strip()}%"
+    users = db.query(User).filter(
+        (User.first_name.ilike(search_pattern)) |
+        (User.last_name.ilike(search_pattern)) |
+        (User.email.ilike(search_pattern))
+    ).limit(50).all()  # Limit to 50 results
+
+    # Format response to include ban status
+    result = {
+        "users": [
+            {
+                "id": user.id,
+                "keycloak_id": user.keycloak_id,
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "is_banned": user.is_banned,
+                "is_active": user.is_active
+            }
+            for user in users
+        ],
+        "total": len(users)
+    }
+
+    logger.info(f"User {current_user['keycloak_id']} searched for '{query}', found {len(users)} users")
+    return result
+
+
 @router.get("/{user_id}", response_model=UserPublicResponse)
 async def get_user_profile(
     user_id: str,
@@ -228,28 +287,28 @@ async def get_user_profile(
 ):
     """
     Get public profile of any user by ID.
-    
+
     Returns limited profile (excludes email, keycloak_id).
     Requires authentication to prevent scraping.
-    
+
     Args:
         user_id: UUID of the user to retrieve
         current_user: Authenticated user (prevents anonymous access)
         db: Database session
-    
+
     Returns:
         UserPublicResponse: Public user profile
-    
+
     Raises:
         404: User not found
     """
     user = db.query(User).filter(User.id == user_id).first()
-    
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"User {user_id} not found"
         )
-    
+
     return user
 

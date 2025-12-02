@@ -38,8 +38,8 @@ spec:
         - name: EVENT_SERVICE_URL
           value: "http://event:8000"
         {{- end }}
-        {{- if eq $serviceName "user" }}
-        # RabbitMQ connection for user service
+        {{- if or (eq $serviceName "user") (eq $serviceName "moderation") }}
+        # RabbitMQ connection for user and moderation services
         - name: RABBITMQ_URL
           valueFrom:
             secretKeyRef:

@@ -145,12 +145,15 @@ services:
       KEYCLOAK_SERVER_URL: https://keycloak.ltu-m7011e-3.se
       KEYCLOAK_REALM: crewup
       KEYCLOAK_CLIENT_ID: crewup-test
+      RABBITMQ_URL: amqp://guest:guest@crewup-rabbitmq:5672/
     ports:
       - "8006:8000"
     networks:
       - crewup-network
     depends_on:
       postgres:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
 
   # Frontend service (React + Nginx)

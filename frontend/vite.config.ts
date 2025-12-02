@@ -38,6 +38,10 @@ export default defineConfig({
         target: 'http://localhost:8004',
         changeOrigin: true,
       },
+      '/api/v1/moderation': {
+        target: 'http://localhost:8006',
+        changeOrigin: true,
+      },
     },
   },
 })

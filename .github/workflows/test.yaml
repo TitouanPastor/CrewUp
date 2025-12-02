@@ -24,7 +24,7 @@ jobs:
     strategy:
       fail-fast: false  # Continue testing other services even if one fails
       matrix:
-        service: [event, group, safety, user, rating]
+        service: [event, group, safety, user, rating, moderation]
     
     # PostgreSQL service container
     services:

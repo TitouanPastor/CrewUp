@@ -110,8 +110,11 @@ def banned_user(db_session):
 def test_successful_ban_message(consumer, mock_channel, mock_method, test_user, db_session):
     """Test successful ban message processing."""
     message = {
-        "action": "ban",
-        "user_id": "test-rabbitmq-user-123"
+        "action": "ban_user",
+        "user_keycloak_id": "test-rabbitmq-user-123",
+        "moderator_keycloak_id": "moderator-123",
+        "reason": "Test ban reason",
+        "ban": True
     }
     body = json.dumps(message).encode('utf-8')
 
@@ -131,8 +134,11 @@ def test_successful_ban_message(consumer, mock_channel, mock_method, test_user, 
 def test_successful_unban_message(consumer, mock_channel, mock_method, banned_user, db_session):
     """Test successful unban message processing."""
     message = {
-        "action": "unban",
-        "user_id": "test-rabbitmq-banned-456"
+        "action": "unban_user",
+        "user_keycloak_id": "test-rabbitmq-banned-456",
+        "moderator_keycloak_id": "moderator-123",
+        "reason": "Test unban reason",
+        "ban": False
     }
     body = json.dumps(message).encode('utf-8')
 
@@ -164,7 +170,8 @@ def test_invalid_json_message(consumer, mock_channel, mock_method):
 def test_missing_action_field(consumer, mock_channel, mock_method):
     """Test handling of message missing 'action' field."""
     message = {
-        "user_id": "test-rabbitmq-user-123"
+        "user_keycloak_id": "test-rabbitmq-user-123",
+        "ban": True
     }
     body = json.dumps(message).encode('utf-8')
 
@@ -177,9 +184,10 @@ def test_missing_action_field(consumer, mock_channel, mock_method):
 
 
 def test_missing_user_id_field(consumer, mock_channel, mock_method):
-    """Test handling of message missing 'user_id' field."""
+    """Test handling of message missing 'user_keycloak_id' field."""
     message = {
-        "action": "ban"
+        "action": "ban_user",
+        "ban": True
     }
     body = json.dumps(message).encode('utf-8')
 
@@ -195,7 +203,8 @@ def test_unknown_action(consumer, mock_channel, mock_method):
     """Test handling of unknown action type."""
     message = {
         "action": "suspend",
-        "user_id": "test-rabbitmq-user-123"
+        "user_keycloak_id": "test-rabbitmq-user-123",
+        "ban": True
     }
     body = json.dumps(message).encode('utf-8')
 
@@ -210,8 +219,9 @@ def test_unknown_action(consumer, mock_channel, mock_method):
 def test_user_not_found(consumer, mock_channel, mock_method):
     """Test handling when user does not exist."""
     message = {
-        "action": "ban",
-        "user_id": "non-existent-user-999"
+        "action": "ban_user",
+        "user_keycloak_id": "non-existent-user-999",
+        "ban": True
     }
     body = json.dumps(message).encode('utf-8')
 
@@ -226,8 +236,9 @@ def test_user_not_found(consumer, mock_channel, mock_method):
 def test_ban_already_banned_user(consumer, mock_channel, mock_method, banned_user, db_session):
     """Test banning a user who is already banned (idempotency)."""
     message = {
-        "action": "ban",
-        "user_id": "test-rabbitmq-banned-456"
+        "action": "ban_user",
+        "user_keycloak_id": "test-rabbitmq-banned-456",
+        "ban": True
     }
     body = json.dumps(message).encode('utf-8')
 
@@ -247,8 +258,9 @@ def test_ban_already_banned_user(consumer, mock_channel, mock_method, banned_use
 def test_unban_already_unbanned_user(consumer, mock_channel, mock_method, test_user, db_session):
     """Test unbanning a user who is not banned (idempotency)."""
     message = {
-        "action": "unban",
-        "user_id": "test-rabbitmq-user-123"
+        "action": "unban_user",
+        "user_keycloak_id": "test-rabbitmq-user-123",
+        "ban": False
     }
     body = json.dumps(message).encode('utf-8')
 
@@ -274,8 +286,9 @@ def test_database_error_causes_requeue(mock_session_local, consumer, mock_channe
     mock_session_local.return_value = mock_db
 
     message = {
-        "action": "ban",
-        "user_id": "test-rabbitmq-user-123"
+        "action": "ban_user",
+        "user_keycloak_id": "test-rabbitmq-user-123",
+        "ban": True
     }
     body = json.dumps(message).encode('utf-8')
 
@@ -306,8 +319,9 @@ def test_commit_error_causes_requeue(mock_session_local, consumer, mock_channel,
     mock_session_local.return_value = mock_db
 
     message = {
-        "action": "ban",
-        "user_id": "test-rabbitmq-user-123"
+        "action": "ban_user",
+        "user_keycloak_id": "test-rabbitmq-user-123",
+        "ban": True
     }
     body = json.dumps(message).encode('utf-8')
 
@@ -337,10 +351,11 @@ def test_empty_message(consumer, mock_channel, mock_method):
 def test_message_with_extra_fields(consumer, mock_channel, mock_method, test_user, db_session):
     """Test that extra fields in message are ignored."""
     message = {
-        "action": "ban",
-        "user_id": "test-rabbitmq-user-123",
+        "action": "ban_user",
+        "user_keycloak_id": "test-rabbitmq-user-123",
+        "ban": True,
         "extra_field": "should be ignored",
-        "moderator_id": "ignored-moderator-123"
+        "another_field": "also ignored"
     }
     body = json.dumps(message).encode('utf-8')
 
