@@ -171,7 +171,7 @@ jobs:
           echo "## Coverage by Service" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
-          for service in event group safety user rating; do
+          for service in event group safety user rating moderation; do
             coverage_file="coverage-reports/coverage-md-${service}/coverage-report.md"
             if [ -f "$coverage_file" ]; then
               echo "### 📦 ${service^} Service" >> $GITHUB_STEP_SUMMARY

@@ -42,7 +42,8 @@ jobs:
       rating: ${{ steps.changes.outputs.rating }}
       safety: ${{ steps.changes.outputs.safety }}
       user: ${{ steps.changes.outputs.user }}
-      any_service: ${{ steps.changes.outputs.frontend == 'true' || steps.changes.outputs.event == 'true' || steps.changes.outputs.group == 'true' || steps.changes.outputs.rating == 'true' || steps.changes.outputs.safety == 'true' || steps.changes.outputs.user == 'true' }}
+      moderation: ${{ steps.changes.outputs.moderation }}
+      any_service: ${{ steps.changes.outputs.frontend == 'true' || steps.changes.outputs.event == 'true' || steps.changes.outputs.group == 'true' || steps.changes.outputs.rating == 'true' || steps.changes.outputs.safety == 'true' || steps.changes.outputs.user == 'true' || steps.changes.outputs.moderation == 'true' }}
     steps:
       - uses: actions/checkout@v4
       
@@ -72,7 +73,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: [frontend, event, group, rating, safety, user]
+        service: [frontend, event, group, rating, safety, user, moderation]
         # Include/exclude basé sur les changements détectés
         include:
           - service: frontend
@@ -185,7 +186,7 @@ jobs:
             CHANGED_SERVICES="$CHANGED_SERVICES user"
           fi
           
-          # User service
+          # Moderation service
           if [[ "${{ needs.detect-changes.outputs.moderation }}" == "true" ]]; then
             sed -i "/^  moderation:/,/^  [a-z]/ s/^\(    imageTag: \).*/\1\"${{ env.IMAGE_TAG }}\"/" environments/dev/values.yaml
             CHANGED_SERVICES="$CHANGED_SERVICES moderation"
