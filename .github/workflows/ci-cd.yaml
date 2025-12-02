@@ -13,6 +13,7 @@ on:
       - 'safety/**'
       - 'user/**'
       - 'helm/**'
+      - 'moderation/**'
       - '.github/workflows/ci-cd.yaml'
   # Pull requests: only run tests, no builds
   pull_request:
@@ -61,6 +62,8 @@ jobs:
               - 'safety/**'
             user:
               - 'user/**'
+            moderation:
+              - 'moderation/**'
 
   # Build et push seulement les images qui ont changé
   build-and-push:
@@ -78,6 +81,7 @@ jobs:
           - service: rating
           - service: safety
           - service: user
+          - service: moderation
     # Skip si ce service spécifique n'a pas changé
     steps:
       - name: Check if service changed
@@ -88,7 +92,8 @@ jobs:
              [[ "${{ matrix.service }}" == "group" && "${{ needs.detect-changes.outputs.group }}" == "true" ]] || \
              [[ "${{ matrix.service }}" == "rating" && "${{ needs.detect-changes.outputs.rating }}" == "true" ]] || \
              [[ "${{ matrix.service }}" == "safety" && "${{ needs.detect-changes.outputs.safety }}" == "true" ]] || \
-             [[ "${{ matrix.service }}" == "user" && "${{ needs.detect-changes.outputs.user }}" == "true" ]]; then
+             [[ "${{ matrix.service }}" == "user" && "${{ needs.detect-changes.outputs.user }}" == "true" ]] || \
+             [[ "${{ matrix.service }}" == "moderation" && "${{ needs.detect-changes.outputs.moderation }}" == "true" ]]; then
             echo "should_build=true" >> $GITHUB_OUTPUT
           else
             echo "should_build=false" >> $GITHUB_OUTPUT
@@ -178,6 +183,12 @@ jobs:
           if [[ "${{ needs.detect-changes.outputs.user }}" == "true" ]]; then
             sed -i "/^  user:/,/^  [a-z]/ s/^\(    imageTag: \).*/\1\"${{ env.IMAGE_TAG }}\"/" environments/dev/values.yaml
             CHANGED_SERVICES="$CHANGED_SERVICES user"
+          fi
+          
+          # User service
+          if [[ "${{ needs.detect-changes.outputs.moderation }}" == "true" ]]; then
+            sed -i "/^  moderation:/,/^  [a-z]/ s/^\(    imageTag: \).*/\1\"${{ env.IMAGE_TAG }}\"/" environments/dev/values.yaml
+            CHANGED_SERVICES="$CHANGED_SERVICES moderation"
           fi
           
           echo "CHANGED_SERVICES=$CHANGED_SERVICES" >> $GITHUB_ENV
