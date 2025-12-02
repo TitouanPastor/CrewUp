@@ -40,8 +40,24 @@ class ModeratorInfo(BaseModel):
     roles: dict
 
 
+class BanUserRequest(BaseModel):
+    """Request model for banning or unbanning a user."""
+    user_keycloak_id: str = Field(..., description="Keycloak ID of the user to ban/unban")
+    ban: bool = Field(..., description="True to ban, False to unban")
+    reason: str = Field(..., min_length=10, max_length=255, description="Reason for the action (10-255 characters)")
+
+
+class BanUserResponse(BaseModel):
+    """Response model for ban user action."""
+    success: bool
+    message: str
+    moderation_action_id: Optional[int] = None
+
+
 __all__ = [
     "ModerationActionCreate",
     "ModerationActionResponse",
-    "ModeratorInfo"
+    "ModeratorInfo",
+    "BanUserRequest",
+    "BanUserResponse"
 ]

@@ -56,6 +56,18 @@ class Config:
         "https://crewup.ltu-m7011e-3.se",  # Production
     ]
 
+    # RabbitMQ configuration
+    RABBITMQ_HOST: str = os.getenv("RABBITMQ_HOST", "localhost")
+    RABBITMQ_PORT: int = int(os.getenv("RABBITMQ_PORT", "5672"))
+    RABBITMQ_USER: str = os.getenv("RABBITMQ_USER", "guest")
+    RABBITMQ_PASSWORD: str = os.getenv("RABBITMQ_PASSWORD", "guest")
+    RABBITMQ_VHOST: str = os.getenv("RABBITMQ_VHOST", "/")
+
+    # RabbitMQ exchanges and queues
+    USER_BAN_EXCHANGE: str = "user.ban"
+    USER_BAN_QUEUE: str = "user.ban.queue"
+    USER_BAN_ROUTING_KEY: str = "user.ban"
+
 
 # Create singleton instance
 config = Config()

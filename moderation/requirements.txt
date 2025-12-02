@@ -22,3 +22,6 @@ httpx==0.25.2
 
 # Logging et monitoring
 python-json-logger==2.0.7
+
+# Message Queue
+pika==1.3.2
