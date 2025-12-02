@@ -56,6 +56,14 @@ async def create_event(
                 detail="User profile not found. Please complete your profile first."
             )
 
+        # Check if user is banned
+        if user.is_banned:
+            logger.warning(f"Banned user {current_user['keycloak_id']} attempted to create event")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You have been banned from CrewUp."
+            )
+
         # 2. Create event
         new_event = Event(
             creator_id=user.id,
@@ -245,6 +253,14 @@ async def update_event(
                 detail="User profile not found. Please complete your profile first."
             )
 
+        # Check if user is banned
+        if user.is_banned:
+            logger.warning(f"Banned user {current_user['keycloak_id']} attempted to update event")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You have been banned from CrewUp."
+            )
+
         # 2. Get event
         event = db.query(Event).filter(Event.id == event_id).first()
 
@@ -405,6 +421,14 @@ async def delete_event(
                 detail="User profile not found. Please complete your profile first."
             )
 
+        # Check if user is banned
+        if user.is_banned:
+            logger.warning(f"Banned user {current_user['keycloak_id']} attempted to delete event")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You have been banned from CrewUp."
+            )
+
         # 2. Get event
         event = db.query(Event).filter(Event.id == event_id).first()
 
@@ -487,6 +511,14 @@ async def join_event(
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User profile not found. Please complete your profile first."
+            )
+
+        # Check if user is banned
+        if user.is_banned:
+            logger.warning(f"Banned user {current_user['keycloak_id']} attempted to join event")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You have been banned from CrewUp."
             )
 
         # 2. Get event and validate it exists
@@ -610,6 +642,14 @@ async def leave_event(
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User profile not found. Please complete your profile first."
+            )
+
+        # Check if user is banned
+        if user.is_banned:
+            logger.warning(f"Banned user {current_user['keycloak_id']} attempted to leave event")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You have been banned from CrewUp."
             )
 
         # 2. Get event and validate it exists
@@ -940,6 +980,14 @@ async def get_event_participants(
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User profile not found. Please complete your profile first."
+            )
+
+        # Check if user is banned
+        if user.is_banned:
+            logger.warning(f"Banned user {current_user['keycloak_id']} attempted to get participants")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You have been banned from CrewUp."
             )
 
         # 2. Get event and validate it exists

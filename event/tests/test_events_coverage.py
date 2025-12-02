@@ -44,13 +44,14 @@ class MockQuery:
 
 class MockUser:
     """Simple mock user class."""
-    def __init__(self, user_id=None, keycloak_id=None):
+    def __init__(self, user_id=None, keycloak_id=None, is_banned=False):
         self.id = user_id or uuid4()
         self.keycloak_id = keycloak_id or "test-keycloak-id"
         self.email = "test@example.com"
         self.first_name = "Test"
         self.last_name = "User"
         self.profile_picture_url = None
+        self.is_banned = is_banned
 
 
 class MockEvent:

@@ -65,6 +65,14 @@ async def create_group(
                 detail="User profile not found. Please create your profile first."
             )
         
+        # Check if user is banned
+        if user.is_banned:
+            logger.warning(f"Banned user {current_user['keycloak_id']} attempted to create a group")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You have been banned from CrewUp."
+            )
+        
         # Create group
         new_group = Group(
             event_id=group_data.event_id,
@@ -206,6 +214,14 @@ async def join_group(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User profile not found. Please create your profile first."
         )
+
+    # Check if user is banned
+    if user.is_banned:
+        logger.warning(f"Banned user {current_user['keycloak_id']} attempted to join group")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You have been banned from CrewUp."
+        )
     
     user_id = user.id
     
@@ -332,6 +348,14 @@ async def list_members(
             detail="User profile not found"
         )
     
+    # Check if user is banned
+    if user.is_banned:
+        logger.warning(f"Banned user {current_user['keycloak_id']} attempted to list the users of group {group_id}")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You have been banned from CrewUp."
+        )
+    
     # Check if requester is a member
     is_member = db.query(GroupMember).filter(
         GroupMember.group_id == group_id,
@@ -392,6 +416,14 @@ async def list_messages(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User profile not found"
+        )
+    
+    # Check if user is banned
+    if user.is_banned:
+        logger.warning(f"Banned user {current_user['keycloak_id']} attempted to list messages from group {group_id}")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You have been banned from CrewUp."
         )
     
     # Check if requester is a member

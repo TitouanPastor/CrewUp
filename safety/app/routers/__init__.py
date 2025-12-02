@@ -168,7 +168,10 @@ async def create_safety_alert(
         user = db.query(User).filter(User.keycloak_id == current_user["keycloak_id"]).first()
         if not user:
             raise SafetyException("User profile not found. Complete your profile first.", status.HTTP_404_NOT_FOUND)
-        
+        # Check if user is banned
+        if user.is_banned:
+            logger.warning(f"Banned user {user.keycloak_id} attempted to raise a safety alert")
+            raise SafetyException("User has been banned from Crewup.", status.HTTP_403_FORBIDDEN)
         # Validate group exists
         group = db.query(Group).filter(Group.id == alert_data.group_id).first()
         if not group:
@@ -241,6 +244,11 @@ async def list_safety_alerts(
         if not user:
             raise NotFoundException("User profile not found")
         
+        # Check if user is banned
+        if user.is_banned:
+            logger.warning(f"Banned user {user.keycloak_id} attempted to list the safety alerts")
+            raise SafetyException("User has been banned from Crewup.", status.HTTP_403_FORBIDDEN)
+        
         # Query alerts from user's groups
         query = db.query(SafetyAlert).join(
             GroupMember, and_(GroupMember.group_id == SafetyAlert.group_id, GroupMember.user_id == user.id)
@@ -291,6 +299,11 @@ async def get_my_alerts(
         if not user:
             raise NotFoundException("User profile not found")
         
+        # Check if user is banned
+        if user.is_banned:
+            logger.warning(f"Banned user {user.keycloak_id} attempted to list their safety alerts")
+            raise SafetyException("User has been banned from Crewup.", status.HTTP_403_FORBIDDEN)
+        
         # Query alerts created by this user
         query = db.query(SafetyAlert).filter(SafetyAlert.user_id == user.id)
         
@@ -334,6 +347,11 @@ async def get_safety_alert(
         if not user:
             raise NotFoundException("User profile not found")
         
+        # Check if user is banned
+        if user.is_banned:
+            logger.warning(f"Banned user {user.keycloak_id} attempted to check safety alert {alert_id}")
+            raise SafetyException("User has been banned from Crewup.", status.HTTP_403_FORBIDDEN)
+        
         # Get alert
         alert = db.query(SafetyAlert).filter(SafetyAlert.id == alert_id).first()
         if not alert:
@@ -372,6 +390,11 @@ async def resolve_safety_alert(
         user = db.query(User).filter(User.keycloak_id == current_user["keycloak_id"]).first()
         if not user:
             raise NotFoundException("User profile not found")
+        
+        # Check if user is banned
+        if user.is_banned:
+            logger.warning(f"Banned user {user.keycloak_id} attempted to resolve safety alert {alert_id}")
+            raise SafetyException("User has been banned from Crewup.", status.HTTP_403_FORBIDDEN)
         
         # Get alert
         alert = db.query(SafetyAlert).filter(SafetyAlert.id == alert_id).first()

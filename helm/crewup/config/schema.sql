@@ -18,7 +18,6 @@ CREATE TABLE users (
     interests TEXT[],
     reputation DECIMAL(3, 2) DEFAULT 0.00 CHECK (reputation >= 0 AND reputation <= 5),
     is_active BOOLEAN DEFAULT TRUE,
-    is_banned BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
