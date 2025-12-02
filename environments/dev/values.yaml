@@ -31,13 +31,13 @@ services:
     enabled: true
     replicas: 1
     port: 8000
-    imageTag: "0d01ff6"
+    imageTag: "2a18361"
     
   group:
     enabled: true
     replicas: 1
     port: 8000
-    imageTag: "a0895b7"
+    imageTag: "2a18361"
     
   rating:
     enabled: true
@@ -49,20 +49,20 @@ services:
     enabled: true
     replicas: 1
     port: 8000
-    imageTag: "a0895b7"
+    imageTag: "2a18361"
     
   user:
     enabled: true
     replicas: 1
     port: 8000
-    imageTag: "a0895b7"
+    imageTag: "2a18361"
 
 # Frontend
 frontend:
   enabled: true
   replicas: 1
   port: 80
-  imageTag: "2477f74"
+  imageTag: "2a18361"
   image: crewup-frontend
 
 # Ingress Settings
