@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq-service-management
+  labels:
+    app: rabbitmq
+spec:
+  selector:
+    app: rabbitmq
+  type: ClusterIP  # Internal only - use kubectl port-forward to access
+  ports:
+    - name: http
+      protocol: TCP
+      port: 15672
+      targetPort: 15672

@@ -61,6 +61,12 @@ async def websocket_chat(
             await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="User profile not found")
             return
         
+        # Check if user is banned
+        if user.is_banned:
+            logger.warning(f"Banned user {user.keycloak_id} attempted to connect to websocket")
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="You have been banned from CrewUp")
+            return
+        
         user_id = user.id
         
         # Build username from first_name + last_name, fallback to email

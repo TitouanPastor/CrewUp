@@ -89,4 +89,15 @@ spec:
             port:
               number: {{ .Values.services.user.port }}
       {{- end }}
+
+      {{- if .Values.services.moderation.enabled }}
+      # Moderation service API
+      - path: /api/v1/moderation
+        pathType: Prefix
+        backend:
+          service:
+            name: moderation
+            port:
+              number: {{ .Values.services.moderation.port }}
+      {{- end }}
 {{- end }}

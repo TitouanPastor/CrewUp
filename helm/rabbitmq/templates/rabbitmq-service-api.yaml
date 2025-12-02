@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq-service-api
+  labels:
+    app: rabbitmq
+spec:
+  selector:
+    app: rabbitmq
+  type: ClusterIP  # Internal only - no external access
+  ports:
+    - name: amqp
+      protocol: TCP
+      port: 5672
+      targetPort: 5672

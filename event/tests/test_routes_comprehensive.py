@@ -61,7 +61,7 @@ class MockQuery:
         return self
 
 
-def create_mock_user(user_id=None, keycloak_id=None):
+def create_mock_user(user_id=None, keycloak_id=None, is_banned=False):
     """Create a properly mocked User object."""
     user = Mock()
     user.id = user_id or uuid4()
@@ -74,6 +74,7 @@ def create_mock_user(user_id=None, keycloak_id=None):
     user.interests = []
     user.reputation = 0.0
     user.is_active = True
+    user.is_banned = is_banned
     user.created_at = datetime.now(timezone.utc)
     user.updated_at = datetime.now(timezone.utc)
     return user

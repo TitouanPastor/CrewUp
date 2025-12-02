@@ -49,7 +49,8 @@ class User(Base):
     
     # Status
     is_active = Column(Boolean, default=True, nullable=False)
-    
+    is_banned = Column(Boolean, default=False, nullable=False)
+
     # Timestamps
     created_at = Column(TIMESTAMP, server_default=func.now(), nullable=False)
     updated_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now(), nullable=False)

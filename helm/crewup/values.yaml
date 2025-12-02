@@ -51,6 +51,12 @@ services:
     port: 8000
     imageTag: "304ccc1"
 
+  moderation:
+    enabled: true  # Moderation service for banning users
+    replicas: 1
+    port: 8000
+    imageTag: latest
+
 # Frontend (React + Nginx)
 frontend:
   enabled: true

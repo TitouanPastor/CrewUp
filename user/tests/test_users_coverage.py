@@ -20,7 +20,7 @@ class MockQuery:
         return self._return_value
 
 
-def create_mock_user(user_id=None, keycloak_id=None, email="test@example.com"):
+def create_mock_user(user_id=None, keycloak_id=None, email="test@example.com", is_banned=False):
     """Create a mock User object."""
     user = Mock()
     user.id = user_id or uuid4()
@@ -30,6 +30,7 @@ def create_mock_user(user_id=None, keycloak_id=None, email="test@example.com"):
     user.last_name = "User"
     user.bio = None
     user.interests = []
+    user.is_banned = is_banned
     return user
 
 

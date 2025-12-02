@@ -1,0 +1,6 @@
+# RabbitMQ Configuration
+Image: "rabbitmq:3-management"
+
+# RabbitMQ Credentials
+RabbitMQUser: "admin"
+RabbitMQPassword: ""

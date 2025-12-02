@@ -54,6 +54,7 @@ def make_mock_user():
         email="user@example.com",
         first_name="Test",
         last_name="User",
+        is_banned=False,
         created_at=datetime.utcnow(),
     )
 

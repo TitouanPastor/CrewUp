@@ -1,13 +1,15 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Calendar, User, AlertTriangle, Moon, Sun, CheckCircle, Loader2, MessageCircle } from 'lucide-react';
+import { Home, Calendar, User, AlertTriangle, Moon, Sun, CheckCircle, Loader2, MessageCircle, Shield } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 import SafetyAlertDialog from './SafetyAlertDialog';
+import ModeratorModal from './ModeratorModal';
 import { useActiveAlert } from '@/hooks/useActiveAlert';
 import { safetyService } from '@/services/safetyService';
 import { extractErrorMessage } from '@/utils/errorHandler';
 import { useToast } from '@/hooks/use-toast';
+import { isModerator } from '@/utils/moderatorCheck';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,10 +26,14 @@ export default function Navbar() {
   const [isLongPressing, setIsLongPressing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [showAlertDialog, setShowAlertDialog] = useState(false);
+  const [showModeratorModal, setShowModeratorModal] = useState(false);
   const [hasActiveEvents, setHasActiveEvents] = useState(true); // Optimistic default
   const [isResolving, setIsResolving] = useState(false);
   const longPressTimer = useRef<number | null>(null);
   const progressInterval = useRef<number | null>(null);
+
+  // Check if user is a moderator
+  const userIsModerator = isModerator();
 
   // Listen for alert-resolved events from other components
   useEffect(() => {
@@ -144,6 +150,19 @@ export default function Navbar() {
               </Link>
             ))}
 
+            {/* Moderator Button - Only visible for moderators */}
+            {userIsModerator && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowModeratorModal(true)}
+                className="ml-2"
+              >
+                <Shield className="w-4 h-4 mr-2" />
+                <span>Moderator</span>
+              </Button>
+            )}
+
             {/* Alert Button */}
             <Button
               variant={activeAlert ? "destructive" : "outline"}
@@ -215,6 +234,14 @@ export default function Navbar() {
         onActiveEventsChange={setHasActiveEvents}
         onAlertSent={refreshAlert} // Refresh active alert after sending
       />
+
+      {/* Moderator Modal - Only rendered for moderators */}
+      {userIsModerator && (
+        <ModeratorModal
+          open={showModeratorModal}
+          onOpenChange={setShowModeratorModal}
+        />
+      )}
     </nav>
   );
 }

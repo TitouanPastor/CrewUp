@@ -54,7 +54,7 @@ class MockQuery:
         return self
 
 
-def make_mock_user(user_id=None, keycloak_id=None):
+def make_mock_user(user_id=None, keycloak_id=None, is_banned=False):
     user_id = user_id or uuid4()
     return SimpleNamespace(
         id=user_id,
@@ -62,6 +62,7 @@ def make_mock_user(user_id=None, keycloak_id=None):
         email="test@example.com",
         first_name="Test",
         last_name="User",
+        is_banned=is_banned,
     )
 
 
