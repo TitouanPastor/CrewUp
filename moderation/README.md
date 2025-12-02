@@ -4,7 +4,7 @@ Content moderation and user management service for CrewUp. Enables moderators to
 
 ## Features
 
-- ✅ User ban/unban functionality
+- ✅ User ban/unban functionality.
 - ✅ Role-based access control (Moderator role required)
 - ✅ JWT authentication (Keycloak)
 - ✅ RabbitMQ event publishing for ban actions
