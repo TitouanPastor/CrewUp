@@ -19,6 +19,13 @@ postgres:
   password: ""
   storage: 5Gi  # Disk space for database
 
+# RabbitMQ Message Queue
+rabbitmq:
+  host: rabbitmq-service-api
+  port: 5672
+  user: admin
+  password: ""  # Set via --set rabbitmq.password=<password> or via secrets
+
 # API Services (all FastAPI microservices with minimal implementation)
 services:
   event:
