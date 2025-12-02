@@ -22,6 +22,7 @@ postgres:
 # RabbitMQ Message Queue
 rabbitmq:
   host: rabbitmq-service-api
+  namespace: rabbitmq  # RabbitMQ is in a different namespace
   port: 5672
   user: admin
   password: ""  # Set via --set rabbitmq.password=<password> or via secrets
