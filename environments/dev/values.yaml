@@ -57,6 +57,12 @@ services:
     port: 8000
     imageTag: "a12e022"
 
+  moderation:
+    enabled: true
+    replicas: 1
+    port: 8000
+    imageTag: "latest"  # Auto-updated by CI/CD
+
 # Frontend
 frontend:
   enabled: true
