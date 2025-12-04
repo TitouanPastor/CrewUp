@@ -22,6 +22,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from sqlalchemy.exc import SQLAlchemyError
 import logging
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from app.config import config
 from app.routers import groups_router, chat_router, internal_router
@@ -63,6 +64,9 @@ app.add_exception_handler(Exception, generic_exception_handler)
 app.include_router(groups_router, prefix="/api/v1")
 app.include_router(chat_router, prefix="/api/v1")
 app.include_router(internal_router, prefix="/api/v1/groups")  # Internal routes under /api/v1/groups
+
+# Prometheus metrics instrumentation
+Instrumentator().instrument(app).expose(app)
 
 
 # Health check endpoint (no auth required)
