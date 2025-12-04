@@ -58,6 +58,12 @@ services:
     port: 8000
     imageTag: "latest"
 
+  moderation:
+    enabled: true
+    replicas: 2
+    port: 8000
+    imageTag: "latest"
+
 # Frontend - High Availability
 frontend:
   enabled: true
