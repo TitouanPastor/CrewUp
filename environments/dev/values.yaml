@@ -31,31 +31,31 @@ services:
     enabled: true
     replicas: 1
     port: 8000
-    imageTag: "2a18361"
+    imageTag: "a12e022"
     
   group:
     enabled: true
     replicas: 1
     port: 8000
-    imageTag: "2a18361"
+    imageTag: "a12e022"
     
   rating:
     enabled: true
     replicas: 1
     port: 8000
-    imageTag: "latest"  # Auto-updated by CI/CD
+    imageTag: "a12e022"
     
   safety:
     enabled: true
     replicas: 1
     port: 8000
-    imageTag: "2a18361"
+    imageTag: "a12e022"
     
   user:
     enabled: true
     replicas: 1
     port: 8000
-    imageTag: "2a18361"
+    imageTag: "a12e022"
 
   moderation:
     enabled: true
