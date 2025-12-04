@@ -8,6 +8,11 @@ metadata:
   namespace: {{ $.Values.namespace }}
   labels:
     app: {{ $serviceName }}
+  annotations:
+    # Prometheus scraping configuration
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "{{ $config.port }}"
+    prometheus.io/path: "/metrics"
 spec:
   type: ClusterIP
   ports:
