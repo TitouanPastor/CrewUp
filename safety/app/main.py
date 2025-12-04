@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from sqlalchemy.exc import SQLAlchemyError
 import logging
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from app.config import config
 from app.routers import alerts_router
@@ -46,6 +47,9 @@ app.add_exception_handler(Exception, generic_exception_handler)
 
 # Include routers WITHOUT additional prefix (router already has /safety)
 app.include_router(alerts_router)
+
+# Prometheus metrics instrumentation
+Instrumentator().instrument(app).expose(app)
 
 
 @app.get("/health", tags=["health"])
