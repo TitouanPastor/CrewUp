@@ -12,11 +12,11 @@ class TestHealthEndpoint:
 
     def test_health_check(self, client):
         """Health endpoint should return 200 OK."""
-        response = client.get("/health")
+        response = client.get("/api/v1/safety/health")
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert data["status"] == "healthy"
-        assert data["service"] == "safety"
+        assert data["service"] == "safety-service"
 
 
 class TestAuthentication:

@@ -213,12 +213,12 @@ class TestHealthCheck:
     """Test health check endpoint (no auth required)."""
 
     def test_health_check(self, api_client):
-        """Health check should return 200 without authentication."""
-        response = api_client.get("/health")
+        """Health check should work without authentication."""
+        response = api_client.get("/api/v1/safety/health")
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "healthy"
-        assert data["service"] == "safety"
+        assert data["service"] == "safety-service"
 
 
 class TestAuthentication:
