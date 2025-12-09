@@ -31,44 +31,44 @@ services:
     enabled: true
     replicas: 2  # Test scaling in staging
     port: 8000
-    imageTag: "latest"
+    imageTag: "a12e022"
     
   group:
     enabled: true
     replicas: 2
     port: 8000
-    imageTag: "latest"
+    imageTag: "a12e022"
     
   rating:
     enabled: true
     replicas: 1
     port: 8000
-    imageTag: "latest"
+    imageTag: "a12e022"
     
   safety:
     enabled: true
     replicas: 1
     port: 8000
-    imageTag: "latest"
+    imageTag: "a12e022"
     
   user:
     enabled: true
     replicas: 2
     port: 8000
-    imageTag: "latest"
+    imageTag: "a12e022"
 
   moderation:
     enabled: true
     replicas: 1
     port: 8000
-    imageTag: "latest"
+    imageTag: "a12e022"
 
 # Frontend
 frontend:
   enabled: true
   replicas: 2  # Test HA in staging
   port: 80
-  imageTag: "3c91201"
+  imageTag: "2a18361"
   image: crewup-frontend
 
 # Ingress Settings
