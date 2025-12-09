@@ -44,7 +44,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PAT_TOKEN }}  # Utilise PAT au lieu de GITHUB_TOKEN
           fetch-depth: 0
       
       - name: Extract image tags from source environment
