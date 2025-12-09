@@ -52,10 +52,22 @@ app.include_router(alerts_router)
 Instrumentator().instrument(app).expose(app)
 
 
-@app.get("/health", tags=["health"])
+# Health check endpoint (no auth required)
+@app.get("/api/v1/safety/health")
 async def health_check():
-    """Service health check."""
-    return {"status": "healthy", "service": "safety", "version": "1.0.0"}
+    """Health check endpoint for monitoring."""
+    return {"status": "healthy", "service": "safety-service"}
+
+
+# Root endpoint
+@app.get("/")
+async def root():
+    """Root endpoint with service info."""
+    return {
+        "service": "safety-service",
+        "version": "1.0.0",
+        "docs": "/api/v1/safety/docs"
+    }
 
 
 @app.on_event("startup")
