@@ -27,6 +27,15 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/safety", tags=["safety-alerts"])
 
 
+@router.get("/health", include_in_schema=False, tags=["health"])
+async def health_check():
+    """Health check endpoint (no auth required)."""
+    return {
+        "status": "healthy",
+        "service": "safety-service"
+    }
+
+
 class SafetyException(HTTPException):
     """Custom exception for safety-specific errors."""
     def __init__(self, detail: str, status_code: int = status.HTTP_400_BAD_REQUEST):

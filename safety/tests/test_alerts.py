@@ -12,11 +12,11 @@ from app.db import SafetyAlert
 
 def test_health_check(client):
     """Test health check endpoint."""
-    response = client.get("/health")
+    response = client.get("/api/v1/safety/health")
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
     assert data["status"] == "healthy"
-    assert data["service"] == "safety"
+    assert data["service"] == "safety-service"
 
 
 def test_create_safety_alert_success(client, db_session, mock_user, mock_group, mock_group_member, mock_current_user):
