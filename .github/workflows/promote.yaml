@@ -129,14 +129,6 @@ jobs:
       
       - name: Deployment summary
         run: |
-          # Re-extract tags for summary
-          FRONTEND_TAG=$(grep 'imageTag:' environments/${{ github.event.inputs.source_env }}/values.yaml | grep -A 5 'frontend:' | grep 'imageTag:' | awk '{print $2}' | tr -d '"')
-          EVENT_TAG=$(grep 'imageTag:' environments/${{ github.event.inputs.source_env }}/values.yaml | grep -A 5 'event:' | grep 'imageTag:' | head -1 | awk '{print $2}' | tr -d '"')
-          GROUP_TAG=$(grep 'imageTag:' environments/${{ github.event.inputs.source_env }}/values.yaml | grep -A 5 'group:' | grep 'imageTag:' | head -1 | awk '{print $2}' | tr -d '"')
-          RATING_TAG=$(grep 'imageTag:' environments/${{ github.event.inputs.source_env }}/values.yaml | grep -A 5 'rating:' | grep 'imageTag:' | head -1 | awk '{print $2}' | tr -d '"')
-          SAFETY_TAG=$(grep 'imageTag:' environments/${{ github.event.inputs.source_env }}/values.yaml | grep -A 5 'safety:' | grep 'imageTag:' | head -1 | awk '{print $2}' | tr -d '"')
-          USER_TAG=$(grep 'imageTag:' environments/${{ github.event.inputs.source_env }}/values.yaml | grep -A 5 'user:' | grep 'imageTag:' | head -1 | awk '{print $2}' | tr -d '"')
-          
           echo "## 🎉 Promotion Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Source:** \`${{ github.event.inputs.source_env }}\`" >> $GITHUB_STEP_SUMMARY
@@ -146,12 +138,13 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Service | Tag |" >> $GITHUB_STEP_SUMMARY
           echo "|---------|-----|" >> $GITHUB_STEP_SUMMARY
-          echo "| Frontend | \`$FRONTEND_TAG\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Event | \`$EVENT_TAG\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Group | \`$GROUP_TAG\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Rating | \`$RATING_TAG\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Safety | \`$SAFETY_TAG\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| User | \`$USER_TAG\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend | \`${{ env.FRONTEND_TAG }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Event | \`${{ env.EVENT_TAG }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Group | \`${{ env.GROUP_TAG }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Rating | \`${{ env.RATING_TAG }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Safety | \`${{ env.SAFETY_TAG }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| User | \`${{ env.USER_TAG }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Moderation | \`${{ env.MODERATION_TAG }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 🔗 Next Steps" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
