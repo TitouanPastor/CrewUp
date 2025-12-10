@@ -1,0 +1,886 @@
+{
+  "root_group": {
+    "name": "",
+    "path": "",
+    "id": "d41d8cd98f00b204e9800998ecf8427e",
+    "groups": [
+      {
+        "checks": [
+          {
+            "name": "auth success",
+            "path": "::Chat User::auth success",
+            "id": "b51dd1b8f024bc6aa2fd8ca03fe690b3",
+            "passes": 224,
+            "fails": 0
+          },
+          {
+            "fails": 0,
+            "name": "page /groups/d689d225-9b1c-4ca4-951a-5c95843cbb9b/chat OK",
+            "path": "::Chat User::page /groups/d689d225-9b1c-4ca4-951a-5c95843cbb9b/chat OK",
+            "id": "99255f6a1a301b28c81a8e372ad16d4a",
+            "passes": 113
+          },
+          {
+            "name": "GET /api/v1/groups/d689d225-9b1c-4ca4-951a-5c95843cbb9b/messages OK",
+            "path": "::Chat User::GET /api/v1/groups/d689d225-9b1c-4ca4-951a-5c95843cbb9b/messages OK",
+            "id": "4ba8c2d3c21b5bb9599a623d9fc4f354",
+            "passes": 113,
+            "fails": 0
+          },
+          {
+            "name": "page /groups/01ff5a47-eca2-4be1-b0c7-a6bf00ec7dc7/chat OK",
+            "path": "::Chat User::page /groups/01ff5a47-eca2-4be1-b0c7-a6bf00ec7dc7/chat OK",
+            "id": "cd96029c26c78c5bb5b4fd32e1bc3a4e",
+            "passes": 111,
+            "fails": 0
+          },
+          {
+            "fails": 12,
+            "name": "WS message OK",
+            "path": "::Chat User::WS message OK",
+            "id": "6148fc21980fd6a59aa6131c3523b370",
+            "passes": 525
+          },
+          {
+            "name": "GET /api/v1/groups/01ff5a47-eca2-4be1-b0c7-a6bf00ec7dc7/messages OK",
+            "path": "::Chat User::GET /api/v1/groups/01ff5a47-eca2-4be1-b0c7-a6bf00ec7dc7/messages OK",
+            "id": "60828cfce2497fa61333de852054e2f7",
+            "passes": 111,
+            "fails": 0
+          }
+        ],
+        "name": "Chat User",
+        "path": "::Chat User",
+        "id": "54ed06b43c9936271682208eabf09ebe",
+        "groups": []
+      },
+      {
+        "name": "Active User",
+        "path": "::Active User",
+        "id": "f934bebc2bec474e3dcde356baa62d3b",
+        "groups": [],
+        "checks": [
+            {
+              "name": "auth success",
+              "path": "::Active User::auth success",
+              "id": "d8a1f7252a3dfaff4e656b5a1ff5a57d",
+              "passes": 513,
+              "fails": 0
+            },
+            {
+              "passes": 513,
+              "fails": 0,
+              "name": "page / OK",
+              "path": "::Active User::page / OK",
+              "id": "0d0f941d4b274cdb71f7ca9885b888cc"
+            },
+            {
+              "name": "page /events OK",
+              "path": "::Active User::page /events OK",
+              "id": "4e466cb5427f9a9b7ad40fa5816112e3",
+              "passes": 513,
+              "fails": 0
+            },
+            {
+              "name": "GET /api/v1/events OK",
+              "path": "::Active User::GET /api/v1/events OK",
+              "id": "17da4b41a5fdba32013dda3aa466dc41",
+              "passes": 513,
+              "fails": 0
+            },
+            {
+              "name": "page /groups OK",
+              "path": "::Active User::page /groups OK",
+              "id": "b20bade6576affe2c072e0f59ea2d7ac",
+              "passes": 513,
+              "fails": 0
+            },
+            {
+              "name": "GET /api/v1/groups OK",
+              "path": "::Active User::GET /api/v1/groups OK",
+              "id": "5230620e0903c8530fdff70e0769c431",
+              "passes": 513,
+              "fails": 0
+            },
+            {
+              "name": "page /profile OK",
+              "path": "::Active User::page /profile OK",
+              "id": "f32f9e88eef8a0bce24f57f15fc57596",
+              "passes": 513,
+              "fails": 0
+            },
+            {
+              "name": "GET /api/v1/users/me OK",
+              "path": "::Active User::GET /api/v1/users/me OK",
+              "id": "067301f4e5810f3924b8978c61b9924f",
+              "passes": 513,
+              "fails": 0
+            },
+            {
+              "path": "::Active User::GET /api/v1/safety/my-alerts OK",
+              "id": "bfda5a2f9dc539b98a8cfe5ec90c7c96",
+              "passes": 263,
+              "fails": 0,
+              "name": "GET /api/v1/safety/my-alerts OK"
+            }
+          ]
+      },
+      {
+        "checks": [
+          {
+            "name": "auth success",
+            "path": "::Casual Browser::auth success",
+            "id": "2d69ead8546954455a08782714138095",
+            "passes": 620,
+            "fails": 0
+          },
+          {
+            "fails": 0,
+            "name": "page / OK",
+            "path": "::Casual Browser::page / OK",
+            "id": "f3b950782db4aad4da8b1e680ec3fd1e",
+            "passes": 620
+          },
+          {
+            "name": "page /events OK",
+            "path": "::Casual Browser::page /events OK",
+            "id": "1b60a70157a56c0fa295ed7fab04e1a6",
+            "passes": 620,
+            "fails": 0
+          },
+          {
+            "fails": 0,
+            "name": "GET /api/v1/events OK",
+            "path": "::Casual Browser::GET /api/v1/events OK",
+            "id": "8bd8c59b6d174bace9a17d6910612c10",
+            "passes": 620
+          },
+          {
+            "name": "page /profile OK",
+            "path": "::Casual Browser::page /profile OK",
+            "id": "142fd3d6e614520afa2ed498717a01b6",
+            "passes": 183,
+            "fails": 0
+          },
+          {
+            "name": "GET /api/v1/users/me OK",
+            "path": "::Casual Browser::GET /api/v1/users/me OK",
+            "id": "fe18ce821f9b24fe5b5ac533be6206cf",
+            "passes": 183,
+            "fails": 0
+          }
+        ],
+        "name": "Casual Browser",
+        "path": "::Casual Browser",
+        "id": "500cfc90f1e3a590bebfc37f5aa324c6",
+        "groups": []
+      },
+      {
+        "name": "Safety Alert Creator",
+        "path": "::Safety Alert Creator",
+        "id": "c69041aed9c8a46451e07659942d35d2",
+        "groups": [],
+        "checks": [
+            {
+              "name": "auth success",
+              "path": "::Safety Alert Creator::auth success",
+              "id": "6b62d8d405e4d63630756b9fb4497b4b",
+              "passes": 45,
+              "fails": 0
+            },
+            {
+              "id": "f363fcffc092e5d58ec8052bcdcc3210",
+              "passes": 45,
+              "fails": 0,
+              "name": "page /profile OK",
+              "path": "::Safety Alert Creator::page /profile OK"
+            },
+            {
+              "path": "::Safety Alert Creator::POST /api/v1/safety OK",
+              "id": "c5a24735ec81111e9fb777a6e8e9b48c",
+              "passes": 19,
+              "fails": 26,
+              "name": "POST /api/v1/safety OK"
+            }
+          ]
+      },
+      {
+        "name": "Event Creator",
+        "path": "::Event Creator",
+        "id": "196fb46846113e15ab467e75b43e50b0",
+        "groups": [],
+        "checks": [
+            {
+              "name": "auth success",
+              "path": "::Event Creator::auth success",
+              "id": "c51e36ca4eb9a3a73e17cb01d666ce3f",
+              "passes": 36,
+              "fails": 0
+            },
+            {
+              "name": "page /events OK",
+              "path": "::Event Creator::page /events OK",
+              "id": "d2e4394582a699512cfe9de0a86cf65a",
+              "passes": 36,
+              "fails": 0
+            },
+            {
+              "passes": 36,
+              "fails": 0,
+              "name": "GET /api/v1/events OK",
+              "path": "::Event Creator::GET /api/v1/events OK",
+              "id": "abb5995bbbbfe33183a8b8720ef417a0"
+            },
+            {
+              "name": "POST /api/v1/events OK",
+              "path": "::Event Creator::POST /api/v1/events OK",
+              "id": "7d4acb70bf076eb2d16d39d312f2eb44",
+              "passes": 36,
+              "fails": 0
+            },
+            {
+              "name": "GET /api/v1/events/3ed96521-fc77-408c-8253-a46449bf4113 OK",
+              "path": "::Event Creator::GET /api/v1/events/3ed96521-fc77-408c-8253-a46449bf4113 OK",
+              "id": "590952cfd1ddce26647fca74aaeec29d",
+              "passes": 1,
+              "fails": 0
+            },
+            {
+              "fails": 0,
+              "name": "GET /api/v1/events/016c413e-4351-49eb-b3aa-4e11eb6070e6 OK",
+              "path": "::Event Creator::GET /api/v1/events/016c413e-4351-49eb-b3aa-4e11eb6070e6 OK",
+              "id": "d5999a2939dd6921bd41f1ba163214b0",
+              "passes": 1
+            },
+            {
+              "path": "::Event Creator::GET /api/v1/events/ef2c8063-a6a5-438e-afd1-c98bd3244ec7 OK",
+              "id": "2126b7a84f0302b71a65a5c75591280e",
+              "passes": 1,
+              "fails": 0,
+              "name": "GET /api/v1/events/ef2c8063-a6a5-438e-afd1-c98bd3244ec7 OK"
+            },
+            {
+              "name": "GET /api/v1/events/03f9c69e-7544-400e-9cb8-f965b0ddcfee OK",
+              "path": "::Event Creator::GET /api/v1/events/03f9c69e-7544-400e-9cb8-f965b0ddcfee OK",
+              "id": "1e7f0f41b77f3d6a5ab0ff50e10fd3cf",
+              "passes": 1,
+              "fails": 0
+            },
+            {
+              "passes": 1,
+              "fails": 0,
+              "name": "GET /api/v1/events/649a9be2-a2fd-4436-b9ba-c442058ed0ef OK",
+              "path": "::Event Creator::GET /api/v1/events/649a9be2-a2fd-4436-b9ba-c442058ed0ef OK",
+              "id": "a357d3caf0fdaa68826c41220f6975f3"
+            },
+            {
+              "id": "d144b2c57804fd88742bcfe6a40e0fe2",
+              "passes": 1,
+              "fails": 0,
+              "name": "GET /api/v1/events/af95473b-cac8-4b29-95ae-78f8bdada17b OK",
+              "path": "::Event Creator::GET /api/v1/events/af95473b-cac8-4b29-95ae-78f8bdada17b OK"
+            },
+            {
+              "path": "::Event Creator::GET /api/v1/events/abe9fd3b-03c9-4249-b192-92cbb6e8c7ef OK",
+              "id": "e97a2c33498b82ffc10cc1848aeb487f",
+              "passes": 1,
+              "fails": 0,
+              "name": "GET /api/v1/events/abe9fd3b-03c9-4249-b192-92cbb6e8c7ef OK"
+            },
+            {
+              "fails": 0,
+              "name": "GET /api/v1/events/0fbfce10-4be5-4005-8484-b715ba6904f2 OK",
+              "path": "::Event Creator::GET /api/v1/events/0fbfce10-4be5-4005-8484-b715ba6904f2 OK",
+              "id": "1083e230e4d1e0257c076cbef70daa78",
+              "passes": 1
+            },
+            {
+              "name": "GET /api/v1/events/72b5b00e-f82e-4b9b-92a3-ae33d921acca OK",
+              "path": "::Event Creator::GET /api/v1/events/72b5b00e-f82e-4b9b-92a3-ae33d921acca OK",
+              "id": "a2606f07bd98aa3e8c2a62f56c401fa8",
+              "passes": 1,
+              "fails": 0
+            },
+            {
+              "path": "::Event Creator::GET /api/v1/events/8b8d7325-7ac8-4f92-b9d4-b2e1886d3c86 OK",
+              "id": "1b75a5885a527d5ed0e72a84ee7683fc",
+              "passes": 1,
+              "fails": 0,
+              "name": "GET /api/v1/events/8b8d7325-7ac8-4f92-b9d4-b2e1886d3c86 OK"
+            },
+            {
+              "id": "f9cd4d3bc92b9c7cffa86ef99587af1a",
+              "passes": 1,
+              "fails": 0,
+              "name": "GET /api/v1/events/e675002c-5a3e-4865-add0-169e63b099f2 OK",
+              "path": "::Event Creator::GET /api/v1/events/e675002c-5a3e-4865-add0-169e63b099f2 OK"
+            },
+            {
+              "name": "GET /api/v1/events/bdb6e7ba-f991-426b-940e-89f48b98abf4 OK",
+              "path": "::Event Creator::GET /api/v1/events/bdb6e7ba-f991-426b-940e-89f48b98abf4 OK",
+              "id": "82510e8c56cab738324dfe17b037401e",
+              "passes": 1,
+              "fails": 0
+            },
+            {
+              "name": "GET /api/v1/events/17930972-6177-4f1c-9090-ef22369169bc OK",
+              "path": "::Event Creator::GET /api/v1/events/17930972-6177-4f1c-9090-ef22369169bc OK",
+              "id": "1c0f37107b7f7b4842772642441d5b7a",
+              "passes": 1,
+              "fails": 0
+            },
+            {
+              "name": "GET /api/v1/events/42d780f1-3beb-463e-8571-b52ce3032671 OK",
+              "path": "::Event Creator::GET /api/v1/events/42d780f1-3beb-463e-8571-b52ce3032671 OK",
+              "id": "9e9a6c3f5779a6dffd17496fb2c00144",
+              "passes": 1,
+              "fails": 0
+            },
+            {
+              "name": "GET /api/v1/events/fe2bff9f-3af1-4dcc-a7cc-cf897dacf4f5 OK",
+              "path": "::Event Creator::GET /api/v1/events/fe2bff9f-3af1-4dcc-a7cc-cf897dacf4f5 OK",
+              "id": "b7881f15136944d847c7b207d9358f32",
+              "passes": 1,
+              "fails": 0
+            },
+            {
+              "path": "::Event Creator::GET /api/v1/events/e4819bbd-ec01-42c9-b343-58b5dc69233c OK",
+              "id": "4f9a4ba7351caca43270fd329f324559",
+              "passes": 1,
+              "fails": 0,
+              "name": "GET /api/v1/events/e4819bbd-ec01-42c9-b343-58b5dc69233c OK"
+            },
+            {
+              "passes": 1,
+              "fails": 0,
+              "name": "GET /api/v1/events/3cd203db-1f68-41de-be66-78256ec1e0d9 OK",
+              "path": "::Event Creator::GET /api/v1/events/3cd203db-1f68-41de-be66-78256ec1e0d9 OK",
+              "id": "25ade419e27edfba7f6edb73c286dd07"
+            },
+            {
+              "name": "GET /api/v1/events/d27238e3-9e1d-4911-9281-9c3ce256ad4f OK",
+              "path": "::Event Creator::GET /api/v1/events/d27238e3-9e1d-4911-9281-9c3ce256ad4f OK",
+              "id": "62b745df827bedf9806c5eb5feeedf11",
+              "passes": 1,
+              "fails": 0
+            },
+            {
+              "passes": 1,
+              "fails": 0,
+              "name": "GET /api/v1/events/d99e48bf-cc60-4b09-96f9-625028eaf2ab OK",
+              "path": "::Event Creator::GET /api/v1/events/d99e48bf-cc60-4b09-96f9-625028eaf2ab OK",
+              "id": "0ce43f8a620388e5b11f10578a57c73e"
+            },
+            {
+              "name": "GET /api/v1/events/4420b826-18b3-44ea-b2ff-cf5222f54d37 OK",
+              "path": "::Event Creator::GET /api/v1/events/4420b826-18b3-44ea-b2ff-cf5222f54d37 OK",
+              "id": "1f6bd967d09db12be9e6e801034e583f",
+              "passes": 1,
+              "fails": 0
+            },
+            {
+              "name": "GET /api/v1/events/ad50c3a5-4fb8-4899-acc6-e2064be8c342 OK",
+              "path": "::Event Creator::GET /api/v1/events/ad50c3a5-4fb8-4899-acc6-e2064be8c342 OK",
+              "id": "2e79a79fb6d2553c57bb95f603c5ffaf",
+              "passes": 1,
+              "fails": 0
+            },
+            {
+              "name": "GET /api/v1/events/90ac6032-3366-428d-8bc2-5706b01b9810 OK",
+              "path": "::Event Creator::GET /api/v1/events/90ac6032-3366-428d-8bc2-5706b01b9810 OK",
+              "id": "655e57de753d4cdc5572e51f28b2a3bd",
+              "passes": 1,
+              "fails": 0
+            },
+            {
+              "passes": 1,
+              "fails": 0,
+              "name": "GET /api/v1/events/a8efefaa-c0be-4655-be34-d819e4601da6 OK",
+              "path": "::Event Creator::GET /api/v1/events/a8efefaa-c0be-4655-be34-d819e4601da6 OK",
+              "id": "aa52f033cfc40946d76390acc06f7e74"
+            },
+            {
+              "name": "GET /api/v1/events/71e534c5-865f-4aab-b5e5-4bb997b259b0 OK",
+              "path": "::Event Creator::GET /api/v1/events/71e534c5-865f-4aab-b5e5-4bb997b259b0 OK",
+              "id": "83ff61edfe47b2285e327169f6ba5ada",
+              "passes": 1,
+              "fails": 0
+            },
+            {
+              "name": "GET /api/v1/events/45e0e25f-9179-4d6f-884c-e2b0f352657a OK",
+              "path": "::Event Creator::GET /api/v1/events/45e0e25f-9179-4d6f-884c-e2b0f352657a OK",
+              "id": "28446864ab266996dff8aa9ca19d4cc9",
+              "passes": 1,
+              "fails": 0
+            },
+            {
+              "name": "GET /api/v1/events/1d297fe2-a164-4fcf-be3e-5adb5c589e5b OK",
+              "path": "::Event Creator::GET /api/v1/events/1d297fe2-a164-4fcf-be3e-5adb5c589e5b OK",
+              "id": "f3a9be01e40ce320444f0a356f8e42c0",
+              "passes": 1,
+              "fails": 0
+            },
+            {
+              "fails": 0,
+              "name": "GET /api/v1/events/ffc95710-8675-47e9-937a-750bb799c93e OK",
+              "path": "::Event Creator::GET /api/v1/events/ffc95710-8675-47e9-937a-750bb799c93e OK",
+              "id": "38cf6a95ff1eab36f194ee49635e9a01",
+              "passes": 1
+            },
+            {
+              "name": "GET /api/v1/events/4a01cb34-c405-4291-a329-879d253aa488 OK",
+              "path": "::Event Creator::GET /api/v1/events/4a01cb34-c405-4291-a329-879d253aa488 OK",
+              "id": "8d51c245ea50aef6794774e63c237ccb",
+              "passes": 1,
+              "fails": 0
+            },
+            {
+              "name": "GET /api/v1/events/7edb2b07-3b96-470a-8168-954487f2f06b OK",
+              "path": "::Event Creator::GET /api/v1/events/7edb2b07-3b96-470a-8168-954487f2f06b OK",
+              "id": "54d438f80fbe27b0fd2671f3f38b7023",
+              "passes": 1,
+              "fails": 0
+            },
+            {
+              "id": "63194b39b81d4c59a887c05ee7102f58",
+              "passes": 1,
+              "fails": 0,
+              "name": "GET /api/v1/events/0e5c55b2-e334-403a-b404-aa2263baef26 OK",
+              "path": "::Event Creator::GET /api/v1/events/0e5c55b2-e334-403a-b404-aa2263baef26 OK"
+            },
+            {
+              "name": "GET /api/v1/events/d0da27a8-b5cd-4e07-ace3-248fec780ba0 OK",
+              "path": "::Event Creator::GET /api/v1/events/d0da27a8-b5cd-4e07-ace3-248fec780ba0 OK",
+              "id": "febbfc4410850dfcbb73dbbfee2470bd",
+              "passes": 1,
+              "fails": 0
+            },
+            {
+              "fails": 0,
+              "name": "GET /api/v1/events/2bf915b4-cce4-445d-8d08-ec2ea1378f74 OK",
+              "path": "::Event Creator::GET /api/v1/events/2bf915b4-cce4-445d-8d08-ec2ea1378f74 OK",
+              "id": "c79ace754e9ff63aaa308df463490e81",
+              "passes": 1
+            },
+            {
+              "name": "GET /api/v1/events/0d5a5f1e-6e7f-4ec4-a982-a4e96cae45b9 OK",
+              "path": "::Event Creator::GET /api/v1/events/0d5a5f1e-6e7f-4ec4-a982-a4e96cae45b9 OK",
+              "id": "ab8e0cefdc16126650223e6214aa0e21",
+              "passes": 1,
+              "fails": 0
+            },
+            {
+              "name": "GET /api/v1/events/45454056-49ba-4eca-a1fe-5615e0dc14c4 OK",
+              "path": "::Event Creator::GET /api/v1/events/45454056-49ba-4eca-a1fe-5615e0dc14c4 OK",
+              "id": "d28469be430f09e5e53acc8454b6a33e",
+              "passes": 1,
+              "fails": 0
+            },
+            {
+              "name": "GET /api/v1/events/e0d06d0b-7da8-4abd-945c-c44ece5ce6af OK",
+              "path": "::Event Creator::GET /api/v1/events/e0d06d0b-7da8-4abd-945c-c44ece5ce6af OK",
+              "id": "b000cea94055e2593f387ee4b8dfd71a",
+              "passes": 1,
+              "fails": 0
+            },
+            {
+              "id": "e0affb2bd237dba776fc48e62216ee3a",
+              "passes": 1,
+              "fails": 0,
+              "name": "GET /api/v1/events/a694ce7f-190d-4abf-81bb-bd092a8440f1 OK",
+              "path": "::Event Creator::GET /api/v1/events/a694ce7f-190d-4abf-81bb-bd092a8440f1 OK"
+            }
+          ]
+      },
+      {
+        "name": "Group Creator",
+        "path": "::Group Creator",
+        "id": "68adb1113487ee751e19e784be0c70a3",
+        "groups": [],
+        "checks": [
+            {
+              "name": "auth success",
+              "path": "::Group Creator::auth success",
+              "id": "e7a6c1a9972c460524a8cd321ad65c20",
+              "passes": 80,
+              "fails": 0
+            },
+            {
+              "fails": 0,
+              "name": "page /groups OK",
+              "path": "::Group Creator::page /groups OK",
+              "id": "491f012850fcd1b4ffa689e77191fa8c",
+              "passes": 80
+            },
+            {
+              "id": "e7d5b6d8b2e31573d448746fe73c4628",
+              "passes": 80,
+              "fails": 0,
+              "name": "GET /api/v1/groups OK",
+              "path": "::Group Creator::GET /api/v1/groups OK"
+            },
+            {
+              "name": "POST /api/v1/groups OK",
+              "path": "::Group Creator::POST /api/v1/groups OK",
+              "id": "1bade9caab0bbdc6d9140057692e1789",
+              "passes": 0,
+              "fails": 80
+            }
+          ]
+      }
+    ],
+    "checks": []
+  },
+  "options": {
+    "summaryTrendStats": [
+      "avg",
+      "min",
+      "med",
+      "max",
+      "p(90)",
+      "p(95)"
+    ],
+    "summaryTimeUnit": "",
+    "noColor": false
+  },
+  "state": {
+    "isStdOutTTY": true,
+    "isStdErrTTY": true,
+    "testRunDurationMs": 277733.310783
+  },
+  "metrics": {
+    "http_req_duration": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "avg": 70.6055255403758,
+        "min": 30.196438,
+        "med": 44.9342455,
+        "max": 590.573976,
+        "p(90)": 137.99355880000005,
+        "p(95)": 193.19886639999993
+      },
+      "thresholds": {
+        "p(95)<3000": {
+          "ok": true
+        }
+      }
+    },
+    "http_status_4xx": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 106,
+        "rate": 0.3816610967591873
+      }
+    },
+    "ws_connecting": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "min": 101.829633,
+        "med": 124.8389105,
+        "max": 907.552061,
+        "p(90)": 144.69228470000002,
+        "p(95)": 150.09087879999998,
+        "avg": 129.65727727232147
+      }
+    },
+    "vus_max": {
+      "type": "gauge",
+      "contains": "default",
+      "values": {
+        "value": 100,
+        "min": 100,
+        "max": 100
+      }
+    },
+    "http_req_receiving": {
+      "values": {
+        "avg": 5.7266039984742045,
+        "min": 0.019455,
+        "med": 0.1263135,
+        "max": 141.16377,
+        "p(90)": 37.3363938,
+        "p(95)": 41.07835294999996
+      },
+      "type": "trend",
+      "contains": "time"
+    },
+    "ws_session_duration": {
+      "values": {
+        "p(95)": 2151.6315144,
+        "avg": 2130.7481374553568,
+        "min": 2102.647176,
+        "med": 2125.7543955,
+        "max": 2908.694866,
+        "p(90)": 2145.6861869
+      },
+      "type": "trend",
+      "contains": "time"
+    },
+    "iterations": {
+      "contains": "default",
+      "values": {
+        "rate": 5.465674951702324,
+        "count": 1518
+      },
+      "type": "counter"
+    },
+    "http_reqs": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 8520,
+        "rate": 30.676910796115813
+      }
+    },
+    "ws_sessions": {
+      "values": {
+        "count": 224,
+        "rate": 0.8065291101326223
+      },
+      "type": "counter",
+      "contains": "default"
+    },
+    "errors": {
+      "type": "rate",
+      "contains": "default",
+      "values": {
+        "rate": 0.015138531848043417,
+        "passes": 106,
+        "fails": 6896
+      },
+      "thresholds": {
+        "rate<0.05": {
+          "ok": true
+        }
+      }
+    },
+    "http_req_tls_handshaking": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "min": 0,
+        "med": 0,
+        "max": 88.896172,
+        "p(90)": 0,
+        "p(95)": 0,
+        "avg": 1.0173388829812202
+      }
+    },
+    "events_created": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 36,
+        "rate": 0.12962074984274286
+      }
+    },
+    "http_req_blocked": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "avg": 2.19070697312209,
+        "min": 0.00008,
+        "med": 0.000362,
+        "max": 1105.04414,
+        "p(90)": 0.000737,
+        "p(95)": 0.000846
+      }
+    },
+    "page_load_time": {
+      "type": "trend",
+      "contains": "default",
+      "values": {
+        "avg": 40.11161679948195,
+        "min": 30.196438,
+        "med": 39.0050025,
+        "max": 222.26866,
+        "p(90)": 44.7718683,
+        "p(95)": 45.96806865
+      }
+    },
+    "alerts_created": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 19,
+        "rate": 0.06841095130589207
+      }
+    },
+    "ws_msgs_received": {
+      "contains": "default",
+      "values": {
+        "count": 537,
+        "rate": 1.933509518487581
+      },
+      "type": "counter"
+    },
+    "vus": {
+      "type": "gauge",
+      "contains": "default",
+      "values": {
+        "min": 1,
+        "max": 100,
+        "value": 1
+      }
+    },
+    "iteration_duration": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "med": 9630.362887,
+        "max": 15009.013238,
+        "p(90)": 11592.6659693,
+        "p(95)": 12134.220951899995,
+        "avg": 9497.295293803021,
+        "min": 4428.952627
+      }
+    },
+    "api_call_time": {
+      "type": "trend",
+      "contains": "default",
+      "values": {
+        "max": 590.573976,
+        "p(90)": 215.83844200000004,
+        "p(95)": 281.2160450999999,
+        "avg": 103.50997843379993,
+        "min": 33.68454,
+        "med": 55.144003
+      }
+    },
+    "data_sent": {
+      "contains": "data",
+      "values": {
+        "count": 3913805,
+        "rate": 14091.953856618784
+      },
+      "type": "counter"
+    },
+    "checks": {
+      "contains": "default",
+      "values": {
+        "rate": 0.9869714033344374,
+        "passes": 8939,
+        "fails": 118
+      },
+      "type": "rate"
+    },
+    "http_req_sending": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "min": 0.015443,
+        "med": 0.072908,
+        "max": 2.246099,
+        "p(90)": 0.14306470000000002,
+        "p(95)": 0.17115644999999996,
+        "avg": 0.08358713685446
+      }
+    },
+    "http_status_2xx": {
+      "values": {
+        "count": 6896,
+        "rate": 24.8295747476543
+      },
+      "type": "counter",
+      "contains": "default"
+    },
+    "group_duration": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "avg": 7516.434900140991,
+        "min": 3176.706629,
+        "med": 7660.7708695,
+        "max": 12043.285611,
+        "p(90)": 9454.1144403,
+        "p(95)": 9946.602228949998
+      }
+    },
+    "data_received": {
+      "type": "counter",
+      "contains": "data",
+      "values": {
+        "count": 38327235,
+        "rate": 138000.13722497274
+      }
+    },
+    "http_req_waiting": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "p(95)": 154.04594059999994,
+        "avg": 64.79533440504711,
+        "min": 30.117551,
+        "med": 44.414821,
+        "max": 555.681014,
+        "p(90)": 113.7453957
+      }
+    },
+    "http_req_failed": {
+      "type": "rate",
+      "contains": "default",
+      "values": {
+        "fails": 8414,
+        "rate": 0.01244131455399061,
+        "passes": 106
+      }
+    },
+    "http_req_connecting": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "med": 0,
+        "max": 1062.247046,
+        "p(90)": 0,
+        "p(95)": 0,
+        "avg": 1.1601093708920196,
+        "min": 0
+      }
+    },
+    "auth_errors": {
+      "type": "rate",
+      "contains": "default",
+      "values": {
+        "fails": 0,
+        "rate": 0,
+        "passes": 0
+      },
+      "thresholds": {
+        "rate<0.01": {
+          "ok": true
+        }
+      }
+    },
+    "http_req_duration{expected_response:true}": {
+      "values": {
+        "min": 30.196438,
+        "med": 44.949253,
+        "max": 590.573976,
+        "p(90)": 139.21684979999998,
+        "p(95)": 194.19718014999984,
+        "avg": 70.91444202151196
+      },
+      "type": "trend",
+      "contains": "time"
+    },
+    "ws_msgs_sent": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "rate": 0.8065291101326223,
+        "count": 224
+      }
+    },
+    "messages_sent": {
+      "values": {
+        "count": 224,
+        "rate": 0.8065291101326223
+      },
+      "type": "counter",
+      "contains": "default"
+    }
+  }
+}
