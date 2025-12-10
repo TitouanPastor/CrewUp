@@ -455,12 +455,14 @@ export default function() {
     activeUser();         // 35%
   } else if (rand < 0.90) {
     chatUser();           // 15%
-  } else if (rand < 0.95) {
-    groupCreator();       // 5%
-  } else if (rand < 0.98) {
-    safetyAlertCreator(); // 3% - Works: events at +31min, alerts sendable 1h before
+  } else if (rand < 0.93) {
+    groupCreator();       // 3%
+  } else if (rand < 0.96) {
+    safetyAlertCreator(); // 3%
+  } else if (rand < 0.97) {
+    eventCreator();       // 1%
   } else {
-    eventCreator();       // 2%
+    casualBrowser();      // fallback (~3%)
   }
 
   sleep(1 + Math.random() * 2);
@@ -518,12 +520,12 @@ export function handleSummary(data) {
   console.log(`   Safety Alerts: ${metrics.alerts_created?.values.count || 0}\n`);
 
   console.log('User Scenarios Distribution:');
-  console.log('   40% Casual Browsers');
+  console.log('   43% Casual Browsers');
   console.log('   35% Active Users (join events, check groups)');
   console.log('   15% Chat Users (send messages via WebSocket)');
-  console.log('    5% Group Creators');
+  console.log('    3% Group Creators');
   console.log('    3% Safety Alert Creators');
-  console.log('    2% Event Creators\n');
+  console.log('    1% Event Creators\n');
 
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
