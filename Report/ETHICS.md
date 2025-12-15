@@ -36,22 +36,7 @@ CrewUp handles sensitive data related to user safety, location, and social inter
 - Moderators can ban users who abuse the system
 - Alerts auto-expire and are cleaned up after 30 days
 
-### 3. User Reputation System
-
-**Purpose**: Build trust through peer ratings after events
-
-**Ethical Considerations**:
-- **Positive**: Encourages good behavior, helps users identify trustworthy peers
-- **Risk**: Discrimination based on reputation scores
-- **Risk**: Revenge ratings from personal conflicts
-
-**Mitigations**:
-- Ratings require event attendance verification
-- Self-rating prevented by database constraints
-- Reputation is a weighted average, reducing impact of outliers
-- Users cannot see who rated them (anonymous)
-
-### 4. Moderation and Banning
+### 3. Moderation and Banning
 
 **Purpose**: Remove harmful users from the platform
 

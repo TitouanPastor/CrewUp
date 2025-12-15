@@ -18,7 +18,6 @@ A microservice-based event discovery and safety platform for students.
 - **Event Discovery**: Create and find local events with map integration
 - **Group Formation**: Form groups for events with real-time chat
 - **Safety Alerts**: "Party Mode" emergency alert system with GPS
-- **Reputation System**: Rate attendees after events
 - **Moderation**: Ban/unban system for platform safety
 
 ## Architecture

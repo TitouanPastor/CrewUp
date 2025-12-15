@@ -33,7 +33,6 @@ CrewUp is built using a microservices architecture with 6 backend services, 1 fr
 3. **User Service** - User profile management
    - User registration from Keycloak
    - Profile CRUD operations
-   - Reputation tracking
    - RabbitMQ consumer for moderation events
    - Port: 8000
 

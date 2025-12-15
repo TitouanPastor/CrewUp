@@ -17,7 +17,7 @@ Comprehensive documentation for the CrewUp system.
 
 CrewUp is a microservice-based event discovery and safety platform:
 
-- **6 Backend Services**: Event, Group, User, Safety, Moderation, Rating (FastAPI/Python)
+- **5 Backend Services**: Event, Group, User, Safety, Moderation (FastAPI/Python)
 - **Frontend**: React SPA with real-time features
 - **Database**: PostgreSQL with complex relational schema
 - **Messaging**: RabbitMQ for async communication
