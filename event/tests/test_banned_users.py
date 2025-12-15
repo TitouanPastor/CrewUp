@@ -78,6 +78,9 @@ def test_banned_user_cannot_create_event(banned_user):
     client = TestClient(app)
 
     # Attempt to create event
+    future_time = (datetime.now(timezone.utc) + timedelta(hours=2)).isoformat()
+    end_time = (datetime.now(timezone.utc) + timedelta(hours=6)).isoformat()
+    
     event_data = {
         "name": "Test Event",
         "description": "Test Description",
@@ -85,8 +88,8 @@ def test_banned_user_cannot_create_event(banned_user):
         "address": "123 Test St",
         "latitude": 45.0,
         "longitude": -75.0,
-        "event_start": "2025-12-15T18:00:00+00:00",
-        "event_end": "2025-12-15T22:00:00+00:00"
+        "event_start": future_time,
+        "event_end": end_time
     }
 
     response = client.post(
@@ -340,6 +343,9 @@ def test_regular_user_can_create_event(regular_user):
     client = TestClient(app)
 
     # Create event
+    future_time = (datetime.now(timezone.utc) + timedelta(hours=2)).isoformat()
+    end_time = (datetime.now(timezone.utc) + timedelta(hours=6)).isoformat()
+    
     event_data = {
         "name": "Test Event",
         "description": "Test Description",
@@ -347,8 +353,8 @@ def test_regular_user_can_create_event(regular_user):
         "address": "123 Test St",
         "latitude": 45.0,
         "longitude": -75.0,
-        "event_start": "2025-12-15T18:00:00+00:00",
-        "event_end": "2025-12-15T22:00:00+00:00"
+        "event_start": future_time,
+        "event_end": end_time
     }
 
     response = client.post(
