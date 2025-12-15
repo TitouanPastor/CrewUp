@@ -1,32 +1,36 @@
 # CrewUp System Report
 
-This folder contains comprehensive documentation of the CrewUp system architecture and design.
+Comprehensive documentation for the CrewUp system.
 
 ## Contents
 
-1. **motivation.md** - Explains what makes CrewUp a dynamic web system
-2. **architecture.md** - High-level architecture diagrams and explanations
-   - Microservices architecture
-   - GitOps CI/CD pipeline
-   - Security model and request flow
-   - Monitoring and observability setup
-3. **database-schema.md** - Database schema documentation with diagrams
-4. **diagrams/** - Visual architecture diagrams (Mermaid format)
+| Document | Description |
+|----------|-------------|
+| [motivation.md](motivation.md) | Dynamic web system characteristics |
+| [architecture.md](architecture.md) | System architecture, CI/CD, monitoring |
+| [database-schema.md](database-schema.md) | Database design and relationships |
+| [SECURITY.md](SECURITY.md) | Authentication, SQL/XSS protection, TLS |
+| [GDPR.md](GDPR.md) | Data privacy compliance analysis |
+| [ETHICS.md](ETHICS.md) | Ethical considerations for sensitive data |
 
-## Quick Overview
+## System Overview
 
-CrewUp is a microservice-based event and group discovery application that enables users to:
-- Discover and create events
-- Form groups for events
-- Communicate via real-time chat
-- Share safety alerts
-- Rate and build reputation
+CrewUp is a microservice-based event discovery and safety platform:
 
-The system is built with:
-- 6 backend microservices (FastAPI/Python)
-- 1 frontend application (React)
-- PostgreSQL database
-- RabbitMQ message broker
-- Keycloak for authentication
-- GitOps deployment with ArgoCD
-- Comprehensive monitoring with Prometheus & Grafana
+- **6 Backend Services**: Event, Group, User, Safety, Moderation, Rating (FastAPI/Python)
+- **Frontend**: React SPA with real-time features
+- **Database**: PostgreSQL with complex relational schema
+- **Messaging**: RabbitMQ for async communication
+- **Auth**: Keycloak (OAuth 2.0 / OIDC)
+- **Deployment**: Kubernetes + Helm + ArgoCD (GitOps)
+- **Monitoring**: Prometheus + Grafana
+
+## Test Coverage
+
+| Service | Coverage |
+|---------|----------|
+| Event | 95% |
+| User | 94% |
+| Moderation | 92% |
+| Safety | 90% |
+| Group | 83% |

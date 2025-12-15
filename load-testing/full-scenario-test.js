@@ -22,6 +22,7 @@ const eventsCreated = new Counter('events_created');
 const groupsJoined = new Counter('groups_joined');
 const messagesSent = new Counter('messages_sent');
 const alertsCreated = new Counter('alerts_created');
+const groupsCreated = new Counter('groups_created');
 
 // ─────────────────────────────────────────────────────────────
 // Configuration
@@ -48,6 +49,7 @@ const ACCESSIBLE_GROUPS = [
 // Test config
 const MAX_VUS = parseInt(__ENV.MAX_VUS || '50');
 const TEST_DURATION = __ENV.TEST_DURATION || '5m';
+const RUN_ID = __ENV.RUN_ID || 'local';
 
 export const options = {
   stages: [
@@ -346,7 +348,7 @@ function groupCreator() {
           const createRes = apiCall('POST', '/api/v1/groups', token, newGroup);
           
           if (createRes.status === 201 || createRes.status === 200) {
-            groupsJoined.add(1);
+            groupsCreated.add(1);
             try {
               const groupData = JSON.parse(createRes.body);
               const groupId = groupData.id || groupData.group_id;
@@ -473,14 +475,14 @@ export default function() {
 // ─────────────────────────────────────────────────────────────
 export function handleSummary(data) {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const metrics = data.metrics;
 
   console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('📊 FULL SCENARIO TEST - SUMMARY');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
-  const metrics = data.metrics;
-
   console.log('Configuration:');
+  console.log(`   Run ID: ${RUN_ID}`);
   console.log(`   Max VUs: ${MAX_VUS}`);
   console.log(`   Test Duration: ${TEST_DURATION}`);
   console.log(`   Base URL: ${BASE_URL}\n`);
@@ -507,11 +509,11 @@ export function handleSummary(data) {
   const total4xx = metrics.http_status_4xx?.values.count || 0;
   const total5xx = metrics.http_status_5xx?.values.count || 0;
   const totalReqs = metrics.http_reqs?.values.count || 1;
-  
-  console.log(`   2xx Success: ${total2xx} (${((total2xx/totalReqs)*100).toFixed(1)}%)`);
-  console.log(`   3xx Redirect: ${total3xx} (${((total3xx/totalReqs)*100).toFixed(1)}%)`);
-  console.log(`   4xx Client Error: ${total4xx} (${((total4xx/totalReqs)*100).toFixed(1)}%)`);
-  console.log(`   5xx Server Error: ${total5xx} (${((total5xx/totalReqs)*100).toFixed(1)}%)\n`);
+
+  console.log(`   2xx Success: ${total2xx} (${((total2xx / totalReqs) * 100).toFixed(1)}%)`);
+  console.log(`   3xx Redirect: ${total3xx} (${((total3xx / totalReqs) * 100).toFixed(1)}%)`);
+  console.log(`   4xx Client Error: ${total4xx} (${((total4xx / totalReqs) * 100).toFixed(1)}%)`);
+  console.log(`   5xx Server Error: ${total5xx} (${((total5xx / totalReqs) * 100).toFixed(1)}%)\n`);
 
   console.log('User Actions:');
   console.log(`   Events Created: ${metrics.events_created?.values.count || 0}`);
@@ -529,8 +531,29 @@ export function handleSummary(data) {
 
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
+  // ---- Extraction pour fichiers ----
+  const p95 = metrics.http_req_duration?.values['p(95)'] || 0;
+  const p99 = metrics.http_req_duration?.values['p(99)'] || 0;
+  const rps = metrics.http_reqs?.values.rate || 0;
+  const totalReq = metrics.http_reqs?.values.count || 0;
+  const err = (metrics.errors?.values.rate || 0) * 100;
+  const httpFail = (metrics.http_req_failed?.values.rate || 0) * 100;
+
+  const jsonName = `results/full-scenario-${RUN_ID}-${timestamp}-vus${MAX_VUS}.json`;
+  const csvName = `results/summary-${RUN_ID}-${timestamp}-vus${MAX_VUS}.csv`;
+
+  const csvHeader =
+    "run_id,ts,base_url,max_vus,test_duration,total_reqs,rps,p95_ms,p99_ms,error_pct,http_fail_pct,2xx,3xx,4xx,5xx\n";
+
+  const csvLine =
+    `${RUN_ID},${new Date().toISOString()},${BASE_URL},${MAX_VUS},${TEST_DURATION},` +
+    `${totalReq},${rps.toFixed(2)},${p95.toFixed(2)},${p99.toFixed(2)},` +
+    `${err.toFixed(2)},${httpFail.toFixed(2)},${total2xx},${total3xx},${total4xx},${total5xx}\n`;
+
   return {
-    'stdout': '',
-    [`results/full-scenario-${timestamp}.json`]: JSON.stringify(data, null, 2),
+    stdout: '',
+    [jsonName]: JSON.stringify(data, null, 2),
+    [csvName]: csvHeader + csvLine,
   };
 }
+
