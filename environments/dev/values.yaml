@@ -31,37 +31,37 @@ services:
     enabled: true
     replicas: 1
     port: 8000
-    imageTag: "a12e022"
+    imageTag: "dcf5f01"
     
   group:
     enabled: true
     replicas: 1
     port: 8000
-    imageTag: "a12e022"
+    imageTag: "dcf5f01"
     
   rating:
     enabled: true
     replicas: 1
     port: 8000
-    imageTag: "a12e022"
+    imageTag: "dcf5f01"
     
   safety:
     enabled: true
     replicas: 1
     port: 8000
-    imageTag: "1eed518"
+    imageTag: "dcf5f01"
     
   user:
     enabled: true
     replicas: 1
     port: 8000
-    imageTag: "a12e022"
+    imageTag: "dcf5f01"
 
   moderation:
     enabled: true
     replicas: 1
     port: 8000
-    imageTag: "latest"  # Auto-updated by CI/CD
+    imageTag: "dcf5f01"
 
 # Frontend
 frontend:
