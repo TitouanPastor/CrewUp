@@ -26,6 +26,7 @@ rabbitmq:
   port: 5672
   user: admin
   password: ""  # Set via --set rabbitmq.password=<password> or via secrets
+  createSecret: false  # Set to false to use existing secret in cluster
 
 # API Services (all FastAPI microservices with minimal implementation)
 services:

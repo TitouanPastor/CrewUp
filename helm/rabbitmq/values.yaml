@@ -4,3 +4,6 @@ Image: "rabbitmq:3-management"
 # RabbitMQ Credentials
 RabbitMQUser: "admin"
 RabbitMQPassword: ""
+
+# Secret Management
+createSecret: false  # Set to false to use existing secret in cluster
