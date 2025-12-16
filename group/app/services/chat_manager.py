@@ -67,8 +67,9 @@ class ChatManager:
     
     def __init__(self, max_messages_per_minute: int = 60):
         """Initialize chat manager."""
-        # Group -> Set of (websocket, user_id, username)
-        self.connections: Dict[UUID, Set[tuple[WebSocket, UUID, str]]] = defaultdict(set)
+        # Group (str) -> List of (websocket, user_id, username)
+        # Using str keys and list to avoid UUID hashing issues
+        self.connections: Dict[str, list[tuple[WebSocket, str, str]]] = defaultdict(list)
         
         # Rate limiting
         self.rate_limiter = RateLimiter(max_messages=max_messages_per_minute)
@@ -86,9 +87,17 @@ class ChatManager:
             username: Username for display
         """
         await websocket.accept()
-        self.connections[group_id].add((websocket, user_id, username))
         
-        logger.info(f"User {username} ({user_id}) connected to group {group_id}")
+        # Convert UUIDs to strings for consistent storage and lookup
+        group_key = str(group_id)
+        user_key = str(user_id)
+        
+        # Add connection (avoid duplicates by checking if websocket already exists)
+        existing = [conn for conn in self.connections[group_key] if conn[0] is websocket]
+        if not existing:
+            self.connections[group_key].append((websocket, user_key, username))
+        
+        logger.info(f"User {username} ({user_id}) connected to group {group_id}. Total connections in group: {len(self.connections[group_key])}")
         
         # Broadcast join notification to existing members (excluding the new member)
         await self.broadcast_member_event(
@@ -109,12 +118,18 @@ class ChatManager:
             user_id: User disconnecting
             username: Username for display
         """
-        # Remove from connections
-        self.connections[group_id].discard((websocket, user_id, username))
+        group_key = str(group_id)
+        user_key = str(user_id)
+        
+        # Remove from connections by finding and removing the websocket
+        self.connections[group_key] = [
+            conn for conn in self.connections[group_key] 
+            if conn[0] is not websocket
+        ]
         
         # Clean up empty groups
-        if not self.connections[group_id]:
-            del self.connections[group_id]
+        if not self.connections[group_key]:
+            del self.connections[group_key]
         
         logger.info(f"User {username} ({user_id}) disconnected from group {group_id}")
         
@@ -168,25 +183,31 @@ class ChatManager:
             message: Message to broadcast
             exclude_websocket: Optional WebSocket to exclude (e.g., sender)
         """
-        if group_id not in self.connections:
+        group_key = str(group_id)
+        
+        if group_key not in self.connections:
             logger.warning(f"Attempted to broadcast to non-existent group {group_id}")
             return
         
+        connections_list = self.connections[group_key]
+        logger.info(f"Broadcasting message to group {group_id}: {len(connections_list)} connections")
+        
         disconnected = []
         
-        for ws, user_id, username in self.connections[group_id]:
-            if ws == exclude_websocket:
+        for ws, user_id, username in connections_list:
+            if ws is exclude_websocket:
                 continue
             
             try:
                 await ws.send_json(message.model_dump(mode="json"))
+                logger.debug(f"Message sent to {username}")
             except Exception as e:
                 logger.error(f"Failed to send message to {username}: {e}")
                 disconnected.append((ws, user_id, username))
         
         # Clean up disconnected clients
         for ws, user_id, username in disconnected:
-            await self.disconnect(group_id, ws, user_id, username)
+            await self.disconnect(group_id, ws, UUID(user_id), username)
     
     async def broadcast_member_event(
         self,
@@ -206,6 +227,8 @@ class ChatManager:
             username: Username
             exclude_websocket: Optional WebSocket to exclude
         """
+        logger.info(f"Broadcasting {message_type} event for user {username} in group {group_id}")
+        
         message = WSMessageOut(
             type=message_type,
             user_id=user_id,
@@ -267,7 +290,8 @@ class ChatManager:
         Returns:
             Number of members notified
         """
-        connections = self.connections.get(group_id, set())
+        group_key = str(group_id)
+        connections = self.connections.get(group_key, [])
         
         if not connections:
             logger.info(f"No active connections in group {group_id} for system message")
@@ -309,7 +333,8 @@ class ChatManager:
         Returns:
             Number of active connections
         """
-        return len(self.connections.get(group_id, set()))
+        group_key = str(group_id)
+        return len(self.connections.get(group_key, []))
 
 
 # Global instance

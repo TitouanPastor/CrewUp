@@ -94,12 +94,12 @@ class TestChatManagerBasics:
         user_ok = uuid4()
         user_fail = uuid4()
 
-        # Pre-register connections
-        manager.connections[group_id] = {
-            (ws_sender, user_sender, "sender"),
-            (ws_receiver_ok, user_ok, "ok"),
-            (ws_receiver_fail, user_fail, "fail"),
-        }
+        # Pre-register connections (using str keys and list format)
+        manager.connections[str(group_id)] = [
+            (ws_sender, str(user_sender), "sender"),
+            (ws_receiver_ok, str(user_ok), "ok"),
+            (ws_receiver_fail, str(user_fail), "fail"),
+        ]
 
         # Make one receiver raise when sending
         async def failing_send_json(_):
@@ -137,11 +137,11 @@ class TestChatManagerBasics:
         ws1 = make_fake_ws()
         ws2 = make_fake_ws()
 
-        # Simulate two connections
-        manager.connections[group_id] = {
-            (ws1, uuid4(), "user1"),
-            (ws2, uuid4(), "user2"),
-        }
+        # Simulate two connections (using str keys and list format)
+        manager.connections[str(group_id)] = [
+            (ws1, str(uuid4()), "user1"),
+            (ws2, str(uuid4()), "user2"),
+        ]
 
         payload = {"type": "system", "message": "test"}
 
@@ -159,8 +159,9 @@ class TestChatManagerBasics:
         group_id = uuid4()
 
         # No connections for this group
-        if group_id in manager.connections:
-            del manager.connections[group_id]
+        group_key = str(group_id)
+        if group_key in manager.connections:
+            del manager.connections[group_key]
 
         payload = {"type": "system", "message": "test"}
         count = await manager.broadcast_system_message(group_id, payload)
