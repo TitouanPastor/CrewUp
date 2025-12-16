@@ -36,7 +36,7 @@ services:
     
   group:
     enabled: true
-    replicas: 1
+    replicas: 2
     port: 8000
     imageTag: "d4d2ce4"
     
