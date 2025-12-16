@@ -38,7 +38,7 @@ services:
     enabled: true
     replicas: 1
     port: 8000
-    imageTag: "dcf5f01"
+    imageTag: "4ed02a4"
     
   rating:
     enabled: true
