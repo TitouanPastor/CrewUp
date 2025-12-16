@@ -28,6 +28,12 @@ rabbitmq:
   password: ""  # Set via --set rabbitmq.password=<password> or via secrets
   createSecret: false  # Set to false to use existing secret in cluster
 
+# Redis for WebSocket synchronization (multi-pod chat)
+redis:
+  enabled: true  # Enable Redis for multi-replica chat synchronization
+  host: redis
+  port: 6379
+
 # API Services (all FastAPI microservices with minimal implementation)
 services:
   event:

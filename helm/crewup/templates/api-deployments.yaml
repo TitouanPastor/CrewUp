@@ -40,6 +40,11 @@ spec:
         - name: EVENT_SERVICE_URL
           value: "http://event:8000"
         {{- end }}
+        {{- if and (eq $serviceName "group") $.Values.redis.enabled }}
+        # Redis connection for multi-pod WebSocket synchronization
+        - name: REDIS_URL
+          value: "redis://{{ $.Values.redis.host }}:{{ $.Values.redis.port }}"
+        {{- end }}
         {{- if or (eq $serviceName "user") (eq $serviceName "moderation") }}
         # RabbitMQ connection for user and moderation services
         - name: RABBITMQ_URL

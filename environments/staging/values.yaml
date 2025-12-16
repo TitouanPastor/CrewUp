@@ -72,6 +72,12 @@ frontend:
   imageTag: "2a18361"
   image: crewup-frontend
 
+# Redis for WebSocket synchronization (required for multi-replica chat)
+redis:
+  enabled: true
+  host: redis
+  port: 6379
+
 # Ingress Settings
 ingress:
   enabled: true

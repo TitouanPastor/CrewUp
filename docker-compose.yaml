@@ -41,6 +41,20 @@ services:
       timeout: 5s
       retries: 5
 
+  # Redis for WebSocket synchronization (multi-pod chat)
+  redis:
+    image: redis:7-alpine
+    container_name: crewup-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - crewup-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # Event service
   event:
     build:
@@ -71,12 +85,15 @@ services:
       KEYCLOAK_SERVER_URL: https://keycloak.ltu-m7011e-3.se
       KEYCLOAK_REALM: crewup
       KEYCLOAK_CLIENT_ID: crewup-test
+      REDIS_URL: redis://crewup-redis:6379
     ports:
       - "8002:8000"
     networks:
       - crewup-network
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   # Rating service

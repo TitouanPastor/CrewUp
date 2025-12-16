@@ -90,19 +90,27 @@ async def root():
 # Startup event
 @app.on_event("startup")
 async def startup_event():
-    """Log application startup."""
+    """Log application startup and initialize services."""
     logger.info(f"Group & Chat Service starting on {config.get_database_url().split('@')[1]}")
     logger.info(f"Keycloak server: {config.KEYCLOAK_SERVER_URL}")
     logger.info(f"CORS origins: {config.CORS_ORIGINS}")
     logger.info(f"Max message length: {config.MAX_MESSAGE_LENGTH}")
     logger.info(f"Message rate limit: {config.MESSAGE_RATE_LIMIT}/min")
+    
+    # Initialize Redis for multi-pod WebSocket synchronization
+    from app.services import chat_manager
+    await chat_manager.init_redis()
 
 
 # Shutdown event
 @app.on_event("shutdown")
 async def shutdown_event():
-    """Log application shutdown."""
+    """Log application shutdown and cleanup."""
     logger.info("Group & Chat Service shutting down")
+    
+    # Close Redis connection
+    from app.services import chat_manager
+    await chat_manager.close_redis()
 
 
 if __name__ == "__main__":
