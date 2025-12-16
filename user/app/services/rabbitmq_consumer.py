@@ -30,15 +30,19 @@ class ModerationConsumer:
     }
     """
 
-    def __init__(self, rabbitmq_url: str, queue_name: str = "user.ban.queue"):
+    def __init__(self, rabbitmq_url: str, queue_name: str = None):
         """
         Initialize the moderation consumer.
 
         Args:
             rabbitmq_url: RabbitMQ connection URL (e.g., amqp://user:pass@host:5672/)
-            queue_name: Queue name to consume from
+            queue_name: Queue name to consume from (defaults to environment-prefixed queue)
         """
         self.rabbitmq_url = rabbitmq_url
+        # Use config queue name if not specified
+        if queue_name is None:
+            from app.config import config as app_config
+            queue_name = app_config.USER_BAN_QUEUE
         self.queue_name = queue_name
         self.connection = None
         self.channel = None

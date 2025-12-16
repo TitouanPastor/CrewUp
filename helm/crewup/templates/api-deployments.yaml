@@ -27,6 +27,8 @@ spec:
         env:
         - name: SERVICE_NAME
           value: {{ $serviceName }}
+        - name: ENVIRONMENT
+          value: {{ $.Values.environment | default "prod" | quote }}
         - name: KEYCLOAK_SERVER_URL
           value: "{{ $.Values.keycloak.url }}"
         - name: KEYCLOAK_REALM

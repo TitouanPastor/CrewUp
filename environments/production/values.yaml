@@ -5,6 +5,7 @@
 namespace: crewup-production
 imageRegistry: ghcr.io/titouanpastor
 imagePullPolicy: Always
+environment: production
 
 # Domain and SSL configuration
 domain: crewup.ltu-m7011e-3.se

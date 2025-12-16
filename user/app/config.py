@@ -63,6 +63,11 @@ class Config:
         "amqp://guest:guest@localhost:5672/"
     )
 
+    # RabbitMQ queue names
+    # Environment prefix to isolate queues between dev/staging/prod
+    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "dev")
+    USER_BAN_QUEUE: str = f"{ENVIRONMENT}.user.ban.queue"
+
 
 # Create singleton instance
 config = Config()
