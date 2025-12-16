@@ -56,13 +56,13 @@ services:
     enabled: true
     replicas: 1
     port: 8000
-    imageTag: "dcf5f01"
+    imageTag: "584f93e"
 
   moderation:
     enabled: true
     replicas: 1
     port: 8000
-    imageTag: "dcf5f01"
+    imageTag: "584f93e"
 
 # Frontend
 frontend:
