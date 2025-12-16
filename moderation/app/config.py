@@ -100,9 +100,12 @@ class Config:
     RABBITMQ_VHOST: str = _rabbitmq_config['vhost']
 
     # RabbitMQ exchanges and queues
-    USER_BAN_EXCHANGE: str = "user.ban"
-    USER_BAN_QUEUE: str = "user.ban.queue"
-    USER_BAN_ROUTING_KEY: str = "user.ban"
+    # Environment prefix to isolate queues between dev/staging/prod
+    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "dev")
+
+    USER_BAN_EXCHANGE: str = f"{ENVIRONMENT}.user.ban"
+    USER_BAN_QUEUE: str = f"{ENVIRONMENT}.user.ban.queue"
+    USER_BAN_ROUTING_KEY: str = f"{ENVIRONMENT}.user.ban"
 
 
 # Create singleton instance

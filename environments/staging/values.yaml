@@ -5,6 +5,7 @@
 namespace: crewup-staging
 imageRegistry: ghcr.io/titouanpastor
 imagePullPolicy: Always
+environment: staging
 
 # Domain and SSL configuration
 domain: crewup-staging.ltu-m7011e-3.se
