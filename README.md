@@ -40,7 +40,7 @@ A microservice-based event discovery and safety platform for students.
                     │  └──────────────┬──────────────────┘   │
                     │                 │                       │
                     │  ┌──────────────┴──────────────────┐   │
-                    │  │  PostgreSQL    │    RabbitMQ    │   │
+                    │  │  PostgreSQL  │  RabbitMQ │ Redis│   │
                     │  └─────────────────────────────────┘   │
                     └─────────────────────────────────────────┘
 ```
@@ -53,6 +53,7 @@ A microservice-based event discovery and safety platform for students.
 | Backend | FastAPI (Python 3.11), SQLAlchemy |
 | Database | PostgreSQL 15 |
 | Messaging | RabbitMQ |
+| Cache/Sync | Redis (WebSocket multi-pod sync) |
 | Auth | Keycloak (OAuth 2.0 / JWT) |
 | Deployment | Kubernetes, Helm, ArgoCD |
 | Monitoring | Prometheus, Grafana |
@@ -99,6 +100,7 @@ docker-compose down
 | Safety API | 8004 | http://localhost:8004/docs |
 | Moderation API | 8006 | http://localhost:8006/docs |
 | RabbitMQ UI | 15672 | http://localhost:15672 |
+| Redis | 6379 | redis://localhost:6379 |
 
 ### Running Tests
 

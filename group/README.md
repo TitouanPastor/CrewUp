@@ -14,6 +14,7 @@ Production-ready microservice for group management and real-time chat in the Cre
 - ✅ **Group CRUD** - Create, read, update groups for events.
 - ✅ **Membership** - Join, leave, member lists with admin roles
 - ✅ **Real-time Chat** - WebSocket-based messaging with typing indicators
+- ✅ **Multi-Pod Chat** - Redis Pub/Sub for horizontal scaling (multiple replicas)
 - ✅ **Message History** - Paginated retrieval with filtering
 - ✅ **Rate Limiting** - Spam protection (5 msg/min per user)
 - ✅ **Authentication** - Keycloak JWT integration
@@ -34,6 +35,7 @@ export DATABASE_URL="postgresql://user:pass@localhost:5432/crewup"
 export KEYCLOAK_SERVER_URL="https://keycloak.example.com"
 export KEYCLOAK_REALM="crewup"
 export KEYCLOAK_CLIENT_ID="crewup-frontend"
+export REDIS_URL="redis://localhost:6379"  # Optional: for multi-pod chat
 
 # Run service
 uvicorn app.main:app --host 0.0.0.0 --port 8002 --reload
@@ -169,8 +171,51 @@ DATABASE_URL=postgresql://crewup:crewup_dev_password@localhost:5432/crewup
 | `KEYCLOAK_CLIENT_ID` | Yes | `crewup-frontend` | OAuth2 client ID |
 | `ENVIRONMENT` | No | `development` | Environment name |
 | `LOG_LEVEL` | No | `INFO` | Logging level |
+| `REDIS_URL` | No | - | Redis URL for multi-pod chat sync |
 | `RATE_LIMIT_MESSAGES` | No | `5` | Max messages per minute |
 | `RATE_LIMIT_WINDOW` | No | `60` | Rate limit window (seconds) |
+
+---
+
+## Multi-Pod Chat Architecture
+
+### Redis Pub/Sub Synchronization
+
+When running with multiple replicas (e.g., in production), the Group Service uses **Redis Pub/Sub** to synchronize WebSocket messages across pods:
+
+**How it works:**
+1. Each pod maintains its own WebSocket connections in memory
+2. When a message arrives, it's sent to local connections AND published to Redis channel `chat:group:{group_id}`
+3. All pods subscribe to these channels and receive messages from other pods
+4. Each pod broadcasts received messages to its local WebSocket connections
+
+**Benefits:**
+- ✅ Horizontal scaling - Run unlimited replicas
+- ✅ No shared state - Each pod independent
+- ✅ Fault tolerance - User reconnects to any healthy pod
+- ✅ Low latency - In-memory connections + Redis pub/sub
+
+**Configuration:**
+```bash
+# Enable Redis for multi-pod sync
+export REDIS_URL="redis://redis-host:6379"
+
+# Without Redis (single pod only)
+# Leave REDIS_URL unset - runs in single-pod mode
+```
+
+**Kubernetes Example:**
+```yaml
+spec:
+  replicas: 3  # Multiple pods for HA
+  template:
+    spec:
+      containers:
+      - name: group-service
+        env:
+        - name: REDIS_URL
+          value: "redis://redis:6379"
+```
 
 ---
 

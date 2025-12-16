@@ -69,6 +69,12 @@ CrewUp is built using a microservices architecture with 6 backend services, 1 fr
    - Decouples services
    - Ports: 5672 (AMQP), 15672 (Management)
 
+9. **Redis** - In-memory data store
+   - WebSocket message synchronization (Pub/Sub)
+   - Enables horizontal scaling of chat service
+   - Multi-pod real-time communication
+   - Port: 6379
+
 10. **Keycloak** - Identity and access management
     - User authentication
     - JWT token issuance
@@ -88,6 +94,7 @@ CrewUp is built using a microservices architecture with 6 backend services, 1 fr
 #### Real-Time Communication (WebSocket)
 - Group Service provides WebSocket endpoint for chat
 - Frontend connects for real-time messaging
+- **Redis Pub/Sub** synchronizes messages across multiple pods for horizontal scaling
 
 ### Architecture Diagram
 
@@ -116,6 +123,7 @@ graph TB
     subgraph "Data Layer"
         PostgreSQL[(PostgreSQL<br/>Database<br/>Port 5432)]
         RabbitMQ[RabbitMQ<br/>Message Broker<br/>Port 5672]
+        Redis[(Redis<br/>Pub/Sub Cache<br/>Port 6379)]
     end
 
     subgraph "External Services"
@@ -138,6 +146,8 @@ graph TB
 
     User -->|Consume| RabbitMQ
     Moderation -->|Publish| RabbitMQ
+
+    Group -->|Pub/Sub| Redis
 
     Safety -->|HTTP| Group
     Safety -->|HTTP| Event
